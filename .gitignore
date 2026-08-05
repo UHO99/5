@@ -2,5 +2,5 @@
 .vscode/
 .gradle/
 .DS_Store
-application-local.properties
+application-dev.properties
 
