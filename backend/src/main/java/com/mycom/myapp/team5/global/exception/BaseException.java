@@ -1,17 +1,16 @@
 package com.mycom.myapp.team5.global.exception;
 
-import org.springframework.http.HttpStatus;
+import com.mycom.myapp.team5.global.common.enums.ErrorCode;
+import lombok.Getter;
 
+@Getter
 public abstract class BaseException extends RuntimeException {
 
-    private final HttpStatus status;
+    private final ErrorCode errorCode;
 
-    protected BaseException(HttpStatus status, String message) {
-        super(message);
-        this.status = status;
+    protected BaseException(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
     }
 
-    public HttpStatus getStatus() {
-        return status;
-    }
 }
