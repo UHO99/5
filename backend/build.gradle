@@ -24,6 +24,9 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+
+	// AOP
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
 	
 	// Security
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
