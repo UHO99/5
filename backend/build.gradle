@@ -47,9 +47,12 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testCompileOnly 'org.projectlombok:lombok'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	// Kafka
+	implementation 'org.springframework.boot:spring-boot-starter-kafka'
 	
 	// Flyway
-	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
 	implementation 'org.flywaydb:flyway-mysql'
 
 	// Validation
