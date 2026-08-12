@@ -1,4 +1,4 @@
-package com.mycom.myapp.team5.domain.example.entity;
+package com.mycom.myapp.team5.domain.coupon.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,11 +12,12 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-public class Example {
+public class Coupon {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
     private String name;
+    private int stock;
 
 }
