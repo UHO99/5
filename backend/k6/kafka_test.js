@@ -21,7 +21,7 @@ export const options = {
             executor: 'ramping-vus',
             startVUs: 0,
             stages: [
-                { duration: '10s', target: TARGET_VUS }, // 램프업
+                { duration: '30s', target: TARGET_VUS }, // 램프업
                 { duration: '30s', target: TARGET_VUS },  // 부하 유지 (동시 접속 시뮬레이션)
                 { duration: '5s', target: 0 },            // 램프다운
             ],

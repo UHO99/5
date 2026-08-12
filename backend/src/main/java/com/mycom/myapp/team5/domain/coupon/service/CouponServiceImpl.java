@@ -29,8 +29,19 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     @Transactional
-    public int decreaseStock(long couponId) {
-        return couponRepository.decreaseStock(couponId);
+    public int decreaseStockBatch(long couponId, int requestedCount) {
+        if (requestedCount <= 0) {
+            return 0;
+        }
+
+        Coupon coupon = couponRepository.findByIdForUpdate(couponId)
+                .orElseThrow(() -> new CouponException(CouponErrorCode.COUPON_NOT_FOUND));
+
+        int granted = Math.min(coupon.getStock(), requestedCount);
+        if (granted > 0) {
+            couponRepository.decreaseStockBy(couponId, granted);
+        }
+        return granted;
     }
 
 }

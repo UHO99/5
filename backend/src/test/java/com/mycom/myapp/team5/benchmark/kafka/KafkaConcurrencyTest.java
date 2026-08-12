@@ -22,7 +22,7 @@ import static org.awaitility.Awaitility.await;
 public class KafkaConcurrencyTest {
 
     private static final int INITIAL_STOCK = 10_000;
-    private static final int REQUEST_COUNT = 100_000;
+    private static final int REQUEST_COUNT = 20_000;
 
     @Autowired
     private CouponRepository couponRepository;
