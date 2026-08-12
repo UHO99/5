@@ -1,4 +1,4 @@
-package com.mycom.myapp.team5.kafka;
+package com.mycom.myapp.team5.benchmark.kafka;
 
 import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
 import com.mycom.myapp.team5.global.kafka.CouponIssueConsumer;

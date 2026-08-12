@@ -1,8 +1,8 @@
 // 쿠폰 발급 컨트롤러(POST /{couponId}/issue) 의 "요청 수락" 속도를 측정하는 k6 스크립트.
 
 // 실행 예:
-//   k6 run k6/coupon-issue-load-test.js
-//   k6 run -e BASE_URL=http://localhost:8080 -e COUPON_ID=1 -e TARGET_VUS=500 k6/coupon-issue-load-test.js
+//   k6 run k6/kafka_test.js
+//   k6 run -e BASE_URL=http://localhost:8080 -e COUPON_ID=1 -e TARGET_VUS=500 k6/kafka_test.js
 
 import http from 'k6/http';
 import { check } from 'k6';
@@ -10,7 +10,7 @@ import { Counter } from 'k6/metrics';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 const COUPON_ID = __ENV.COUPON_ID || '1';
-const TARGET_VUS = Number(__ENV.TARGET_VUS || 500);
+const TARGET_VUS = Number(__ENV.TARGET_VUS || 20_000);
 
 const accepted = new Counter('issue_accepted');
 const rejected = new Counter('issue_rejected');
