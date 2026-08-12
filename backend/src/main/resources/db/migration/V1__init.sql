@@ -4,3 +4,7 @@ CREATE TABLE coupon (
     stock INT NOT NULL,
     PRIMARY KEY (id)
 ) ENGINE=InnoDB;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0cd88f8415108e5931b8ddbade1694bfde48f71a
