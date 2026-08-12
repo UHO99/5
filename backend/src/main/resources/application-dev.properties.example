@@ -9,7 +9,7 @@ server.servlet.session.persistent=false
 
 # JPA
 spring.jpa.open-in-view=false
-spring.jpa.hibernate.ddl-auto=validateㅎ
+spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.show-sql=true
 
 # Kafka
