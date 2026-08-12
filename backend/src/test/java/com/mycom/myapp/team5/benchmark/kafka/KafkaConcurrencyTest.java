@@ -22,11 +22,7 @@ import static org.awaitility.Awaitility.await;
 public class KafkaConcurrencyTest {
 
     private static final int INITIAL_STOCK = 10_000;
-<<<<<<< HEAD
     private static final int REQUEST_COUNT = 100_000;
-=======
-    private static final int REQUEST_COUNT = 20_000;
->>>>>>> 0cd88f8415108e5931b8ddbade1694bfde48f71a
 
     @Autowired
     private CouponRepository couponRepository;
@@ -57,11 +53,8 @@ public class KafkaConcurrencyTest {
         ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
         CountDownLatch requestsSent = new CountDownLatch(REQUEST_COUNT);
 
-<<<<<<< HEAD
-=======
         long startNanos = System.nanoTime();
 
->>>>>>> 0cd88f8415108e5931b8ddbade1694bfde48f71a
         // when
         for (long userId = 1; userId <= REQUEST_COUNT; userId++) {
             long currentUserId = userId;
@@ -84,13 +77,7 @@ public class KafkaConcurrencyTest {
                         assertThat(couponIssueConsumer.getProcessedCount().get()).isEqualTo(REQUEST_COUNT)
                 );
 
-<<<<<<< HEAD
-        // 성공적으로 발급된 건수는 초기 재고 수(10,000)와 정확히 일치해야 한다.
-        Coupon result = couponRepository.findById(couponId).orElseThrow();
 
-        assertThat(result.getStock()).isZero();
-        assertThat(couponIssueConsumer.getSuccessCount().get()).isEqualTo(INITIAL_STOCK);
-=======
         long elapsedNanos = System.nanoTime() - startNanos;
 
         // 성공적으로 발급된 건수는 초기 재고 수(10,000)와 정확히 일치해야 한다.
@@ -119,7 +106,6 @@ public class KafkaConcurrencyTest {
         System.out.printf("총 소요 시간    : %.2f sec%n", elapsedSeconds);
         System.out.printf("처리량          : %,d req/s%n", throughput);
         System.out.println("===============================================");
->>>>>>> 0cd88f8415108e5931b8ddbade1694bfde48f71a
     }
 
 }

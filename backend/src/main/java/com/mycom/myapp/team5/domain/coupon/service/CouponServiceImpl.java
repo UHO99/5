@@ -29,10 +29,6 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     @Transactional
-<<<<<<< HEAD
-    public int decreaseStock(long couponId) {
-        return couponRepository.decreaseStock(couponId);
-=======
     public int decreaseStockBatch(long couponId, int requestedCount) {
         if (requestedCount <= 0) {
             return 0;
@@ -46,7 +42,6 @@ public class CouponServiceImpl implements CouponService {
             couponRepository.decreaseStockBy(couponId, granted);
         }
         return granted;
->>>>>>> 0cd88f8415108e5931b8ddbade1694bfde48f71a
     }
 
 }

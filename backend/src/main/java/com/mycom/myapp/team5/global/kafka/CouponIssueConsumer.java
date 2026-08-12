@@ -6,16 +6,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-
-<<<<<<< HEAD
-=======
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
->>>>>>> 0cd88f8415108e5931b8ddbade1694bfde48f71a
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
@@ -28,22 +24,6 @@ public class CouponIssueConsumer {
 
     private final AtomicInteger processedCount = new AtomicInteger(0);
     private final AtomicInteger successCount = new AtomicInteger(0);
-<<<<<<< HEAD
-
-    @KafkaListener(topics = CouponRequestProducer.TOPIC, groupId = "coupon-issue-group", concurrency = "3")
-    public void consume(String message) {
-        String[] parts = message.split(":");
-        long couponId = Long.parseLong(parts[0]);
-        long userId = Long.parseLong(parts[1]);
-
-        int updated = couponService.decreaseStock(couponId);
-        if (updated > 0) {
-            successCount.incrementAndGet();
-        } else {
-            log.debug("쿠폰 재고 소진으로 발급 실패 - couponId={}, userId={}", couponId, userId);
-        }
-        processedCount.incrementAndGet();
-=======
     private final AtomicInteger duplicateCount = new AtomicInteger(0);
     private final Set<Long> issuedUserIds = ConcurrentHashMap.newKeySet();
 
@@ -85,18 +65,12 @@ public class CouponIssueConsumer {
         }
 
         processedCount.addAndGet(messages.size());
->>>>>>> 0cd88f8415108e5931b8ddbade1694bfde48f71a
     }
 
     public void reset() {
         processedCount.set(0);
         successCount.set(0);
-<<<<<<< HEAD
-    }
-
-=======
         duplicateCount.set(0);
         issuedUserIds.clear();
     }
->>>>>>> 0cd88f8415108e5931b8ddbade1694bfde48f71a
 }
