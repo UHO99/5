@@ -3,4 +3,4 @@
 .gradle/
 .DS_Store
 application-dev.properties
-
+.gitmessage.txt
