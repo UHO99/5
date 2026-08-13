@@ -19,7 +19,7 @@ import java.util.concurrent.Executors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.kafka.enabled=true")
 public class KafkaConcurrencyTest {
 
     private static final int INITIAL_STOCK = 10_000;
