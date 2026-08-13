@@ -16,6 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import javax.sql.DataSource;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -67,7 +68,14 @@ public class KafkaDBIOTest {
 
     @BeforeEach
     void setUp() {
-        Coupon coupon = couponRepository.save(new Coupon(0L, "DB-IO-테스트-쿠폰", INITIAL_STOCK));
+        Coupon coupon = couponRepository.save(
+                Coupon.builder()
+                        .name("DB-IO-테스트-쿠폰")
+                        .totalQuantity(INITIAL_STOCK)
+                        .startAt(LocalDateTime.now().minusMinutes(1))
+                        .endAt(LocalDateTime.now().plusDays(1))
+                        .build()
+        );
         couponId = coupon.getId();
         couponIssueConsumer.reset();
         dbCallLatenciesNanos.clear();
@@ -122,7 +130,7 @@ public class KafkaDBIOTest {
         Coupon result = couponRepository.findById(couponId).orElseThrow();
         printSummary();
 
-        assertThat(result.getStock()).isZero();
+        assertThat(result.getTotalQuantity()).isZero();
         assertThat(couponIssueConsumer.getSuccessCount().get()).isEqualTo(INITIAL_STOCK);
         assertThat(dbCallLatenciesNanos).isNotEmpty();
     }
