@@ -28,10 +28,6 @@ dependencies {
 	// AOP
 	implementation 'org.springframework.boot:spring-boot-starter-aspectj'
 	
-	// Security
-	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	
 	// JPA
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
@@ -65,4 +61,7 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	testLogging {
+		showStandardStreams = true
+	}
 }

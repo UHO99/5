@@ -8,6 +8,6 @@ public interface CouponService {
 
     CouponResponse getCoupon(long couponId);
 
-    int decreaseStock(long couponId);
+    int decreaseStockBatch(long couponId, int requestedCount);
 
 }
