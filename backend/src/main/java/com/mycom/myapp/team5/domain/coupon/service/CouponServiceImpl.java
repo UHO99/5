@@ -17,7 +17,7 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     public CouponResponse getExampleById(Long id) {
-        return CouponResponse.from(new Coupon(1L, "example", 0));
+        return CouponResponse.from(Coupon.builder().name("example").totalQuantity(0).build());
     }
 
     @Override
@@ -37,7 +37,7 @@ public class CouponServiceImpl implements CouponService {
         Coupon coupon = couponRepository.findByIdForUpdate(couponId)
                 .orElseThrow(() -> new CouponException(CouponErrorCode.COUPON_NOT_FOUND));
 
-        int granted = Math.min(coupon.getStock(), requestedCount);
+        int granted = Math.min(coupon.getTotalQuantity(), requestedCount);
         if (granted > 0) {
             couponRepository.decreaseStockBy(couponId, granted);
         }

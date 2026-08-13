@@ -17,7 +17,7 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     Optional<Coupon> findByIdForUpdate(@Param("id") long id);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Coupon c SET c.stock = c.stock - :amount WHERE c.id = :id")
+    @Query("UPDATE Coupon c SET c.totalQuantity = c.totalQuantity - :amount WHERE c.id = :id")
     int decreaseStockBy(@Param("id") long id, @Param("amount") int amount);
 
 }
