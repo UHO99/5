@@ -53,6 +53,8 @@ public class KafkaConcurrencyTest {
         ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
         CountDownLatch requestsSent = new CountDownLatch(REQUEST_COUNT);
 
+        long startNanos = System.nanoTime();
+
         // when
         for (long userId = 1; userId <= REQUEST_COUNT; userId++) {
             long currentUserId = userId;
@@ -75,11 +77,35 @@ public class KafkaConcurrencyTest {
                         assertThat(couponIssueConsumer.getProcessedCount().get()).isEqualTo(REQUEST_COUNT)
                 );
 
+
+        long elapsedNanos = System.nanoTime() - startNanos;
+
         // 성공적으로 발급된 건수는 초기 재고 수(10,000)와 정확히 일치해야 한다.
         Coupon result = couponRepository.findById(couponId).orElseThrow();
+        int successCount = couponIssueConsumer.getSuccessCount().get();
+        int duplicateCount = couponIssueConsumer.getDuplicateCount().get();
+
+        printSummary(result.getStock(), successCount, duplicateCount, elapsedNanos);
 
         assertThat(result.getStock()).isZero();
-        assertThat(couponIssueConsumer.getSuccessCount().get()).isEqualTo(INITIAL_STOCK);
+        assertThat(successCount).isEqualTo(INITIAL_STOCK);
+        assertThat(duplicateCount).isZero();
+    }
+
+    private void printSummary(int finalStock, int successCount, int duplicateCount, long elapsedNanos) {
+        double elapsedSeconds = elapsedNanos / 1_000_000_000.0;
+        long throughput = Math.round(REQUEST_COUNT / elapsedSeconds);
+
+        System.out.println("========== Kafka 동시성 테스트 결과 ==========");
+        System.out.printf("초기 재고       : %,d%n", INITIAL_STOCK);
+        System.out.printf("요청 사용자     : %,d%n", REQUEST_COUNT);
+        System.out.printf("성공 발급       : %,d%n", successCount);
+        System.out.printf("실패 요청       : %,d%n", REQUEST_COUNT - successCount);
+        System.out.printf("최종 DB 재고    : %,d%n", finalStock);
+        System.out.printf("중복 발급       : %,d%n", duplicateCount);
+        System.out.printf("총 소요 시간    : %.2f sec%n", elapsedSeconds);
+        System.out.printf("처리량          : %,d req/s%n", throughput);
+        System.out.println("===============================================");
     }
 
 }
