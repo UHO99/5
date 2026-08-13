@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.sql.DataSource;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -54,7 +55,14 @@ public class CrudConcurrencyTest {
     @BeforeEach
     void setUp() {
         // 시드(V2__sample.sql)에 의존하지 않고 테스트가 직접 쿠폰 생성
-        Coupon coupon = couponRepository.save(new Coupon(0L, "CRUD-동시성-테스트-쿠폰", INITIAL_STOCK));
+        Coupon coupon = couponRepository.save(
+                Coupon.builder()
+                        .name("CRUD-동시성-테스트-쿠폰")
+                        .totalQuantity(INITIAL_STOCK)
+                        .startAt(LocalDateTime.now().minusMinutes(1))
+                        .endAt(LocalDateTime.now().plusDays(1))
+                        .build()
+        );
         couponId = coupon.getId();
     }
 
@@ -84,7 +92,7 @@ public class CrudConcurrencyTest {
                     maxThreadsAwaitingConnection.accumulateAndGet(awaiting, Math::max);
 
                     long start = System.nanoTime();
-                    int updated = couponService.decreaseStock(couponId);
+                    int updated = couponService.decreaseStockBatch(couponId, 1);
                     latencies.add(System.nanoTime() - start);
 
                     if (updated == 1) {
@@ -106,11 +114,11 @@ public class CrudConcurrencyTest {
         Coupon result = couponRepository.findById(couponId).orElseThrow();
 
         assertThat(failCount.get()).as("커넥션/예외 실패 건수").isZero();
-        assertThat(result.getStock()).isZero();
-        assertThat(result.getStock()).isGreaterThanOrEqualTo(0);
+        assertThat(result.getTotalQuantity()).isZero();
+        assertThat(result.getTotalQuantity()).isGreaterThanOrEqualTo(0);
         assertThat(successCount.get()).isEqualTo(INITIAL_STOCK);
 
-        printReport(wallElapsedMs, result.getStock(), successCount.get(),
+        printReport(wallElapsedMs, result.getTotalQuantity(), successCount.get(),
                 maxThreadsAwaitingConnection.get() > 0, latencies);
     }
 
