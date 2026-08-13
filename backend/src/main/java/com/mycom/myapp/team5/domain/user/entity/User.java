@@ -24,9 +24,17 @@ public class User {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(length = 50)
+    private String name;
+
+    @Column(length = 20)
+    private String phone;
+
     @Builder
-    public User(String email) {
+    public User(String email, String name, String phone) {
         this.email = email;
+        this.name = name;
+        this.phone = phone;
     }
 
     @PrePersist
