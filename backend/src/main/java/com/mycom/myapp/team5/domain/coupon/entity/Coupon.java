@@ -45,6 +45,12 @@ public class Coupon {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    /**
+     * S012 정합성 동기화 배치가 채우는 실 발급 건수. null이면 아직 동기화되지 않은 상태.
+     */
+    @Column(name = "issued_quantity")
+    private Integer issuedQuantity;
+
     @Builder
     public Coupon(String name, Integer totalQuantity, LocalDateTime startAt, LocalDateTime endAt) {
         this.name = name;
@@ -70,5 +76,9 @@ public class Coupon {
 
     public void close() {
         this.status = CouponStatus.CLOSE;
+    }
+
+    public void syncIssuedQuantity(int issuedQuantity) {
+        this.issuedQuantity = issuedQuantity;
     }
 }
