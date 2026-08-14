@@ -43,7 +43,6 @@ public class CouponIssueStreamBatchConsumer {
         List<MapRecord<String, String, String>> records = stringRedisTemplate.<String, String>opsForStream().read(
                 Consumer.from(CouponStreamKeys.CONSUMER_GROUP, CouponStreamKeys.CONSUMER_NAME),
                 StreamReadOptions.empty().count(BATCH_SIZE).block(Duration.ofSeconds(2)),
-                StreamOffset.create(CouponStreamKeys.STREAM_KEY, ReadOffset.lastConsumed())
         );
 
         if (records == null || records.isEmpty()) {
@@ -86,7 +85,6 @@ public class CouponIssueStreamBatchConsumer {
 
             try {
                 jdbcTemplate.update(INSERT_SQL, userId, couponId);
-                acknowledge(record.getId());
             } catch (DataAccessException e) {
                 log.error("발급 이력 저장 실패(제약 위반) - couponId={}, userId={}, recordId={} - ACK 보류, 확인 필요", couponId, userId, record.getId(), e);
             }
@@ -94,10 +92,7 @@ public class CouponIssueStreamBatchConsumer {
     }
 
     private void acknowledge(List<MapRecord<String, String, String>> records) {
-        acknowledge(records.stream().map(Record::getId).toArray(RecordId[]::new));
     }
 
-    private void acknowledge(RecordId... recordIds) {
-        stringRedisTemplate.opsForStream().acknowledge(CouponStreamKeys.STREAM_KEY, CouponStreamKeys.CONSUMER_GROUP, recordIds);
     }
 }
