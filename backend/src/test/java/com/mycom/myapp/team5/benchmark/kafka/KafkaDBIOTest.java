@@ -16,6 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import javax.sql.DataSource;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +40,7 @@ import static org.mockito.Mockito.doAnswer;
  * 걸렸는지"를 기준으로 latency를 수집한다. 현재 컨슈머는 배치 리스너라 표본 수는
  * 요청 건수(REQUEST_COUNT)가 아니라 실제 DB 호출(배치) 횟수만큼만 모인다.
  */
-@SpringBootTest
+@SpringBootTest(properties = "app.kafka.enabled=true")
 public class KafkaDBIOTest {
 
     private static final int INITIAL_STOCK = 10_000;
@@ -67,7 +68,14 @@ public class KafkaDBIOTest {
 
     @BeforeEach
     void setUp() {
-        Coupon coupon = couponRepository.save(new Coupon(0L, "DB-IO-테스트-쿠폰", INITIAL_STOCK));
+        Coupon coupon = couponRepository.save(
+                Coupon.builder()
+                        .name("DB-IO-테스트-쿠폰")
+                        .totalQuantity(INITIAL_STOCK)
+                        .startAt(LocalDateTime.now().minusMinutes(1))
+                        .endAt(LocalDateTime.now().plusDays(1))
+                        .build()
+        );
         couponId = coupon.getId();
         couponIssueConsumer.reset();
         dbCallLatenciesNanos.clear();
@@ -122,7 +130,7 @@ public class KafkaDBIOTest {
         Coupon result = couponRepository.findById(couponId).orElseThrow();
         printSummary();
 
-        assertThat(result.getStock()).isZero();
+        assertThat(result.getTotalQuantity()).isZero();
         assertThat(couponIssueConsumer.getSuccessCount().get()).isEqualTo(INITIAL_STOCK);
         assertThat(dbCallLatenciesNanos).isNotEmpty();
     }
