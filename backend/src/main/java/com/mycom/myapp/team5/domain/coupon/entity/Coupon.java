@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Table(name = "coupon")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class Coupon {
 
     @Id

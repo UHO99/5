@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -18,7 +19,7 @@ import java.util.concurrent.Executors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.kafka.enabled=true")
 public class KafkaConcurrencyTest {
 
     private static final int INITIAL_STOCK = 10_000;
@@ -37,7 +38,14 @@ public class KafkaConcurrencyTest {
 
     @BeforeEach
     void setUp() {
-        Coupon coupon = couponRepository.save(new Coupon(0L, "동시성-테스트-쿠폰", INITIAL_STOCK));
+        Coupon coupon = couponRepository.save(
+                Coupon.builder()
+                        .name("동시성-테스트-쿠폰")
+                        .totalQuantity(INITIAL_STOCK)
+                        .startAt(LocalDateTime.now().minusMinutes(1))
+                        .endAt(LocalDateTime.now().plusDays(1))
+                        .build()
+        );
         couponId = coupon.getId();
         couponIssueConsumer.reset();
     }
@@ -84,9 +92,9 @@ public class KafkaConcurrencyTest {
         int successCount = couponIssueConsumer.getSuccessCount().get();
         int duplicateCount = couponIssueConsumer.getDuplicateCount().get();
 
-        printSummary(result.getStock(), successCount, duplicateCount, elapsedNanos);
+        printSummary(result.getTotalQuantity(), successCount, duplicateCount, elapsedNanos);
 
-        assertThat(result.getStock()).isZero();
+        assertThat(result.getTotalQuantity()).isZero();
         assertThat(successCount).isEqualTo(INITIAL_STOCK);
         assertThat(duplicateCount).isZero();
     }

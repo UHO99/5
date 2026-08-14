@@ -4,6 +4,7 @@ import com.mycom.myapp.team5.domain.coupon.service.CouponService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "app.kafka", name = "enabled", havingValue = "true")
 public class CouponIssueConsumer {
 
     private final CouponService couponService;
