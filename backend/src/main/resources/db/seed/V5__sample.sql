@@ -1,1 +1,1 @@
-INSERT INTO coupon (name, stock) VALUES ('EVENT_COUPON', 10000);
+INSERT INTO coupon (name, total_quantity) VALUES ('EVENT_COUPON', 10000);
