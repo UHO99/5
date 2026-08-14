@@ -16,12 +16,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+/**
+ * RedisConcurrencyTest(요청 1건당 왕복 1번)와 달리, Kafka 컨슈머와 같은 알고리즘으로 비교하기 위한 버전.
+ * 요청을 BATCH_SIZE(=Kafka MAX_POLL_RECORDS와 동일)만큼 묶어서 min(재고, 배치크기)를 원자적으로
+ * 승인하는 Lua 호출을 배치당 1번만 한다 — Kafka가 poll당 decreaseStockBatch를 1번만 호출하는 것과 동일 구조.
+ */
 @SpringBootTest
-public class RedisConcurrencyTest {
+public class RedisBatchConcurrencyTest {
 
-	private static final long COUPON_ID = 1L;
+	private static final long COUPON_ID = 2L;
 	private static final int INITIAL_STOCK = 10_000;
 	private static final int REQUEST_COUNT = 100_000;
+	private static final int BATCH_SIZE = 500;
 
 	@Autowired
 	private RedisCouponStockTestService redisCouponStockTestService;
@@ -37,10 +43,11 @@ public class RedisConcurrencyTest {
 	}
 
 	@Test
-	public void 십만명이_동시에_발급요청해도_재고는_정확히_만큼만_소진된다() throws InterruptedException {
-		// given
+	public void 배치로_묶어_원자적_차감하면_카프카와_동일한_구조로_처리된다() throws InterruptedException {
+		int batchCount = REQUEST_COUNT / BATCH_SIZE;
+
 		ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
-		CountDownLatch requestsDone = new CountDownLatch(REQUEST_COUNT);
+		CountDownLatch done = new CountDownLatch(batchCount);
 		AtomicInteger successCount = new AtomicInteger(0);
 
 		AtomicLong peakUsedBytes = new AtomicLong();
@@ -53,33 +60,32 @@ public class RedisConcurrencyTest {
 
 		long start = System.currentTimeMillis();
 
-		// when: 동기 처리이므로 리턴값으로 바로 성공 여부 판단
-		for (long userId = 1; userId <= REQUEST_COUNT; userId++) {
+		// when: Kafka 컨슈머처럼 BATCH_SIZE건씩 묶어서 배치당 원자적 호출 1번만 한다.
+		for (int batch = 0; batch < batchCount; batch++) {
 			executorService.execute(() -> {
 				try {
-					boolean success = redisCouponStockTestService.decreaseStock(COUPON_ID);
-					if (success) {
-						successCount.incrementAndGet();
-					}
+					int granted = redisCouponStockTestService.decreaseStockBatch(COUPON_ID, BATCH_SIZE);
+					successCount.addAndGet(granted);
 				}
 				finally {
-					requestsDone.countDown();
+					done.countDown();
 				}
 			});
 		}
-		requestsDone.await();
+		done.await();
 		executorService.shutdown();
 		long elapsed = System.currentTimeMillis() - start;
 		memorySampler.shutdownNow();
+
+		double elapsedSeconds = elapsed / 1000.0;
+		long throughput = Math.round(REQUEST_COUNT / elapsedSeconds);
 
 		// then
 		assertThat(redisCouponStockTestService.getStock(COUPON_ID)).isZero();
 		assertThat(successCount.get()).isEqualTo(INITIAL_STOCK);
 
-		double elapsedSeconds = elapsed / 1000.0;
-		long throughput = Math.round(REQUEST_COUNT / elapsedSeconds);
-
-		System.out.println("========== Redis 동시성 테스트 결과 ==========");
+		System.out.println("========== Redis(배치) 동시성 테스트 결과 ==========");
+		System.out.printf("배치 크기       : %,d%n", BATCH_SIZE);
 		System.out.printf("초기 재고       : %,d%n", INITIAL_STOCK);
 		System.out.printf("요청 사용자     : %,d%n", REQUEST_COUNT);
 		System.out.printf("성공 발급       : %,d%n", successCount.get());
@@ -88,6 +94,6 @@ public class RedisConcurrencyTest {
 		System.out.printf("총 소요 시간    : %.2f sec%n", elapsedSeconds);
 		System.out.printf("처리량          : %,d req/s%n", throughput);
 		System.out.printf("피크 힙 사용량  : %.1f MB%n", peakUsedBytes.get() / 1024.0 / 1024.0);
-		System.out.println("===============================================");
+		System.out.println("===================================================");
 	}
 }
