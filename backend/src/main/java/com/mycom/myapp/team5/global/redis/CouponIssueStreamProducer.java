@@ -14,7 +14,7 @@ public class CouponIssueStreamProducer {
 
     public void requestIssue(long couponId, long userId) {
         stringRedisTemplate.opsForStream().add(
-                CouponStreamKeys.STREAM_KEY,
+                CouponStreamKeys.streamKey(couponId),
                 Map.of("couponId", String.valueOf(couponId), "userId", String.valueOf(userId))
         );
     }
