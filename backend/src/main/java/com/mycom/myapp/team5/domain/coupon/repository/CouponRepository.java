@@ -1,8 +1,8 @@
 package com.mycom.myapp.team5.domain.coupon.repository;
 
 import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
-import org.springframework.data.jpa.repository.JpaRepository;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -17,7 +17,7 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     Optional<Coupon> findByIdForUpdate(@Param("id") long id);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Coupon c SET c.stock = c.stock - :amount WHERE c.id = :id")
+    @Query("UPDATE Coupon c SET c.totalQuantity = c.totalQuantity - :amount WHERE c.id = :id")
     int decreaseStockBy(@Param("id") long id, @Param("amount") int amount);
 
 }
