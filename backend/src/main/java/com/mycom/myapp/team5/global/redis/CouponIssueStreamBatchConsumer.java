@@ -1,5 +1,9 @@
 package com.mycom.myapp.team5.global.redis;
 
+import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
+import com.mycom.myapp.team5.domain.coupon.repository.CouponRepository;
+import com.mycom.myapp.team5.global.common.enums.CouponStatus;
+import com.mycom.myapp.team5.global.config.RedisStreamConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -19,9 +23,18 @@ import org.springframework.stereotype.Component;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
+/**
+ * 쿠폰별로 나뉜 Redis Stream(coupon:issue:request:stream:{couponId})들을 한 번의
+ * XREADGROUP으로 같이 읽는다. 어떤 스트림을 읽을지는 매 사이클마다 OPEN 상태이거나
+ * CLOSE인데 아직 S012 동기화가 안 끝난 쿠폰 목록으로 결정한다.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -37,13 +50,23 @@ public class CouponIssueStreamBatchConsumer {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final JdbcTemplate jdbcTemplate;
+    private final CouponRepository couponRepository;
+    private final RedisStreamConfig redisStreamConfig;
+
+    // 쿠폰 스트림마다 컨슈머 그룹을 매 사이클 다시 만들려고 시도하지 않도록 캐싱한다.
+    private final Set<String> knownGroups = ConcurrentHashMap.newKeySet();
 
     @Scheduled(fixedDelay = 100)
     public void consume() {
+        List<String> streamKeys = activeStreamKeys();
+        if (streamKeys.isEmpty()) {
+            return;
+        }
+
         List<MapRecord<String, String, String>> records = stringRedisTemplate.<String, String>opsForStream().read(
                 Consumer.from(CouponStreamKeys.CONSUMER_GROUP, CouponStreamKeys.CONSUMER_NAME),
                 StreamReadOptions.empty().count(BATCH_SIZE).block(Duration.ofSeconds(2)),
-                StreamOffset.create(CouponStreamKeys.STREAM_KEY, ReadOffset.lastConsumed())
+                streamOffsets(streamKeys)
         );
 
         if (records == null || records.isEmpty()) {
@@ -58,6 +81,31 @@ public class CouponIssueStreamBatchConsumer {
             log.error("배치 insert 실패(제약 위반 가능성) - 건별로 재시도합니다. count={}", records.size(), e);
             insertIndividually(records);
         }
+    }
+
+    private List<String> activeStreamKeys() {
+        List<Coupon> open = couponRepository.findByStatus(CouponStatus.OPEN);
+        List<Coupon> draining = couponRepository.findByStatusAndIssuedQuantityIsNull(CouponStatus.CLOSE);
+
+        List<String> streamKeys = new ArrayList<>(open.size() + draining.size());
+        open.forEach(coupon -> streamKeys.add(resolveStreamKey(coupon.getId())));
+        draining.forEach(coupon -> streamKeys.add(resolveStreamKey(coupon.getId())));
+        return streamKeys;
+    }
+
+    private String resolveStreamKey(long couponId) {
+        String streamKey = CouponStreamKeys.streamKey(couponId);
+        if (knownGroups.add(streamKey)) {
+            redisStreamConfig.ensureConsumerGroup(streamKey);
+        }
+        return streamKey;
+    }
+
+    @SuppressWarnings("unchecked")
+    private StreamOffset<String>[] streamOffsets(List<String> streamKeys) {
+        return streamKeys.stream()
+                .map(key -> StreamOffset.create(key, ReadOffset.lastConsumed()))
+                .toArray(StreamOffset[]::new);
     }
 
     private void insertBatch(List<MapRecord<String, String, String>> records) {
@@ -86,7 +134,7 @@ public class CouponIssueStreamBatchConsumer {
 
             try {
                 jdbcTemplate.update(INSERT_SQL, userId, couponId);
-                acknowledge(record.getId());
+                acknowledge(record.getStream(), record.getId());
             } catch (DataAccessException e) {
                 log.error("발급 이력 저장 실패(제약 위반) - couponId={}, userId={}, recordId={} - ACK 보류, 확인 필요", couponId, userId, record.getId(), e);
             }
@@ -94,10 +142,15 @@ public class CouponIssueStreamBatchConsumer {
     }
 
     private void acknowledge(List<MapRecord<String, String, String>> records) {
-        acknowledge(records.stream().map(Record::getId).toArray(RecordId[]::new));
+        Map<String, List<RecordId>> byStream = records.stream()
+                .collect(Collectors.groupingBy(
+                        MapRecord::getStream,
+                        Collectors.mapping(Record::getId, Collectors.toList())
+                ));
+        byStream.forEach((streamKey, recordIds) -> acknowledge(streamKey, recordIds.toArray(new RecordId[0])));
     }
 
-    private void acknowledge(RecordId... recordIds) {
-        stringRedisTemplate.opsForStream().acknowledge(CouponStreamKeys.STREAM_KEY, CouponStreamKeys.CONSUMER_GROUP, recordIds);
+    private void acknowledge(String streamKey, RecordId... recordIds) {
+        stringRedisTemplate.opsForStream().acknowledge(streamKey, CouponStreamKeys.CONSUMER_GROUP, recordIds);
     }
 }
