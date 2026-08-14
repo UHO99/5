@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * 쿠폰별로 나뉜 Redis Stream(coupon:issue:request:stream:{couponId})들을 한 번의
  * XREADGROUP으로 같이 읽는다. 어떤 스트림을 읽을지는 매 사이클마다 OPEN 상태이거나
  * CLOSE인데 아직 S012 동기화가 안 끝난 쿠폰 목록으로 결정한다.
- */
+*/
 @Slf4j
 @Component
 @RequiredArgsConstructor
