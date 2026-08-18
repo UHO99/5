@@ -26,4 +26,8 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
 
     List<Coupon> findByStatusAndIssuedQuantityIsNull(CouponStatus status);
 
+    // S013 재검증 대상 - 한 번 정합성이 확정된(consistencyConfirmedAt != null) 쿠폰은 영구히 제외해
+    // CLOSE 누적 건수만큼 매 사이클 부하가 무한정 커지는 것을 막는다.
+    List<Coupon> findByStatusAndConsistencyConfirmedAtIsNull(CouponStatus status);
+
 }
