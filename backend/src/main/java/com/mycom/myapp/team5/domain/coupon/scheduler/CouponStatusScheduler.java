@@ -56,7 +56,7 @@ public class CouponStatusScheduler {
 		
 		for(Coupon coupon : coupons) {
 			try {
-				couponStatusService.openCoupon(coupon.getId());
+				couponStatusService.closeCoupon(coupon.getId());
 				log.info("쿠폰 자동 CLOSE - couponId = {}", coupon.getId());
 			} catch (Exception e) {
 				// 이미 CLOSE 됐거나(멱등) 다른 이유로 실패해도 다음 주기에 재시도
