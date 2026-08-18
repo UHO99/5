@@ -62,7 +62,7 @@ public class DummyDataGenerator {
 
     public static void main(String[] args) throws Exception {
         generateCsv();
-        load(true);
+        load();
         verify();
     }
 
@@ -93,12 +93,13 @@ public class DummyDataGenerator {
 
     // ── 2) 적재 ─────────────────────────────────────────
     /**
-     * CSV 를 users 테이블에 적재하고 소요 시간(ms)을 반환한다.
+     * CSV 를 users 테이블에 적재한다.
      *
-     * @param skipChecks true 면 FK/UNIQUE 검사를 끄고 적재한다
-     * @return 적재 소요 시간(ms)
+     * <p>대량 적재 동안에는 FK/UNIQUE 검사를 끈다. 검사를 다시 켜도 이미 들어간
+     * 데이터를 소급 검증하지는 않으므로, 생성 단계에서 정합성을 보장하고
+     * 적재 후 {@link #verify()} 로 직접 확인한다.
      */
-    private static long load(boolean skipChecks) throws Exception {
+    private static void load() throws Exception {
         String path = OUT.toString().replace('\\', '/');
         String sql = "LOAD DATA LOCAL INFILE '" + path + "' "
                    + "INTO TABLE users CHARACTER SET utf8mb4 "
@@ -108,27 +109,19 @@ public class DummyDataGenerator {
         try (Connection con = connect();
              Statement st = con.createStatement()) {
 
+            // coupon_issue 가 users 를 FK 로 참조하므로 TRUNCATE 자체도 검사를 꺼야 가능하다
             st.execute("SET FOREIGN_KEY_CHECKS = 0");
+            st.execute("SET UNIQUE_CHECKS = 0");
             st.execute("TRUNCATE TABLE users");
-            st.execute("SET FOREIGN_KEY_CHECKS = 1");
-
-            if (skipChecks) {
-                st.execute("SET FOREIGN_KEY_CHECKS = 0");
-                st.execute("SET UNIQUE_CHECKS = 0");
-            }
 
             long start = System.currentTimeMillis();
             int rows = st.executeUpdate(sql);
             long elapsed = System.currentTimeMillis() - start;
 
-            if (skipChecks) {
-                st.execute("SET UNIQUE_CHECKS = 1");
-                st.execute("SET FOREIGN_KEY_CHECKS = 1");
-            }
+            st.execute("SET UNIQUE_CHECKS = 1");
+            st.execute("SET FOREIGN_KEY_CHECKS = 1");
 
-            System.out.printf("적재 (제약 %-3s): %,d건  %,dms%n",
-                    skipChecks ? "OFF" : "ON", rows, elapsed);
-            return elapsed;
+            System.out.printf("적재    : %,d건  %,dms%n", rows, elapsed);
         }
     }
 
