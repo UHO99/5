@@ -1,4 +1,4 @@
-package com.mycom.myapp.team5.tool.dummy;
+package com.mycom.myapp.team5.global.common.util;
 
 import java.io.BufferedWriter;
 import java.io.InputStream;
