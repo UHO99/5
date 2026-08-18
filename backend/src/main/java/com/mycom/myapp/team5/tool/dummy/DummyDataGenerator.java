@@ -15,14 +15,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 import java.util.Random;
 
-/**
- * 더미데이터 생성 도구 (수동 실행).
- *
- * <p>사전 조건
- * <pre>
+ /**
+ * 더미데이터 생성 도구 (수동 실행)
+ * 사전 조건
  * 1) MySQL : SET GLOBAL local_infile = 1;
  * 2) application-dev.properties 의 url : ...&amp;allowLoadLocalInfile=true
- * </pre>
+ *
  */
 public class DummyDataGenerator {
 
@@ -32,7 +30,7 @@ public class DummyDataGenerator {
             System.getProperty("dummy.dir", System.getProperty("java.io.tmpdir")), "highfive");
     private static final Path OUT = OUT_DIR.resolve("users.csv");
     private static final int USER_COUNT = 1_000_000;
-    private static final long SEED = 42L;      // 고정 → 항상 같은 데이터
+    private static final long SEED = 42L;      // 고정 
 
     // ── 이름 조합 (20 × 25 = 500가지) ───────────────────
     private static final String[] LAST_NAMES = {
@@ -93,10 +91,8 @@ public class DummyDataGenerator {
 
     // ── 2) 적재 ─────────────────────────────────────────
     /**
-     * CSV 를 users 테이블에 적재한다.
-     *
-     * <p>대량 적재 동안에는 FK/UNIQUE 검사를 끈다. 검사를 다시 켜도 이미 들어간
-     * 데이터를 소급 검증하지는 않으므로, 생성 단계에서 정합성을 보장하고
+     * CSV 를 users 테이블에 적재
+     * 대량 적재 동안에는 FK/UNIQUE 검사를 끈다. 생성 단계에서 정합성을 보장하고
      * 적재 후 {@link #verify()} 로 직접 확인한다.
      */
     private static void load() throws Exception {
@@ -109,7 +105,6 @@ public class DummyDataGenerator {
         try (Connection con = connect();
              Statement st = con.createStatement()) {
 
-            // coupon_issue 가 users 를 FK 로 참조하므로 TRUNCATE 자체도 검사를 꺼야 가능하다
             st.execute("SET FOREIGN_KEY_CHECKS = 0");
             st.execute("SET UNIQUE_CHECKS = 0");
             st.execute("TRUNCATE TABLE users");
