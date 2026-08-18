@@ -15,6 +15,7 @@ public enum CouponErrorCode implements ErrorCode {
     COUPON_ISSUE_DUPLICATE(HttpStatus.CONFLICT, "CI001", "쿠폰 중복 발급"),
 
     COUPON_INVENTORY_NOT_STOCKED(HttpStatus.NO_CONTENT, "RD001", "재고 미적재"),
+    COUPON_SOLD_OUT(HttpStatus.NO_CONTENT, "RD002", "재고 소진"),
 
     COUPON_STOCK_ISSUE_HISTORY_MISMATCH(HttpStatus.INTERNAL_SERVER_ERROR, "VF001", "재고 <-> 이력 불일치"),
 
