@@ -40,7 +40,7 @@ import static org.mockito.Mockito.doAnswer;
  * 걸렸는지"를 기준으로 latency를 수집한다. 현재 컨슈머는 배치 리스너라 표본 수는
  * 요청 건수(REQUEST_COUNT)가 아니라 실제 DB 호출(배치) 횟수만큼만 모인다.
  */
-@SpringBootTest
+@SpringBootTest(properties = "app.kafka.enabled=true")
 public class KafkaDBIOTest {
 
     private static final int INITIAL_STOCK = 10_000;

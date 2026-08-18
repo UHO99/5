@@ -1,6 +1,7 @@
 package com.mycom.myapp.team5.global.kafka;
 
 import lombok.Getter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +10,7 @@ import java.util.List;
 
 @Getter
 @Component
+@ConditionalOnProperty(prefix = "app.kafka", name = "enabled", havingValue = "true")
 public class MessageConsumer {
 
     private final List<String> receivedMessages = new ArrayList<>();

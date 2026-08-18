@@ -1,4 +1,4 @@
-package com.mycom.myapp.team5.domain.coupon.entity;
+package com.mycom.myapp.team5.domain.couponissue.entity;
 
 import com.mycom.myapp.team5.global.common.enums.CouponIssueStatus;
 import jakarta.persistence.*;

@@ -29,5 +29,11 @@ services:
     depends_on:
       - kafka
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+
 volumes:
   kafka-data:
