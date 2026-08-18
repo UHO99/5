@@ -25,33 +25,33 @@ public class CouponController {
 	private final CouponIssueStreamProducer producer;
 
 	@PostMapping("/{couponId}/issue")
-	public ResponseEntity<ApiResponse<Void>> requestIssue(@PathVariable long couponId, @RequestParam long userId) {
+	public ResponseEntity<ApiResponse<Void>> requestIssue(@PathVariable("couponId") long couponId, @RequestParam("userId") long userId) {
 		producer.requestIssue(couponId, userId);
 		return ResponseEntity.accepted().body(ApiResponse.successNoData());
 	}
 
 	@GetMapping("/{couponId}")
-	public ResponseEntity<ApiResponse<CouponResponse>> getStock(@PathVariable long couponId) {
+	public ResponseEntity<ApiResponse<CouponResponse>> getStock(@PathVariable("couponId") long couponId) {
 		return ResponseEntity.ok(ApiResponse.success(couponService.getCoupon(couponId)));
 	}
 
 	// 수동 OPEN : READY -> OPEN + Redis 재고 초기화 (스케줄러와 동일 로직 공유)
 	@PostMapping("/api/admin/coupons/{couponId}/open")
-	public ResponseEntity<ApiResponse<Void>> openCoupon(@PathVariable long couponId) {
+	public ResponseEntity<ApiResponse<Void>> openCoupon(@PathVariable("couponId") long couponId) {
 		couponStatusService.openCoupon(couponId);
 		return ResponseEntity.ok(ApiResponse.successNoData());
 	}
 
 	// 수동 CLOSE : OPEN -> CLOSE + Redis 재고 키 정리
 	@PostMapping("/api/admin/coupons/{couponId}/close")
-	public ResponseEntity<ApiResponse<Void>> closeCoupon(@PathVariable long couponId) {
+	public ResponseEntity<ApiResponse<Void>> closeCoupon(@PathVariable("couponId") long couponId) {
 		couponStatusService.closeCoupon(couponId);
 		return ResponseEntity.ok(ApiResponse.successNoData());
 	}
 
 	// 현재 상태 조회 (관리자 확인용)
 	@GetMapping("/api/admin/coupons/{couponId}/status")
-	public ResponseEntity<ApiResponse<CouponStatus>> getCouponStatus(@PathVariable long couponId) {
+	public ResponseEntity<ApiResponse<CouponStatus>> getCouponStatus(@PathVariable("couponId") long couponId) {
 		return ResponseEntity.ok(ApiResponse.success(couponStatusService.getStatus(couponId)));
 	}
 }
