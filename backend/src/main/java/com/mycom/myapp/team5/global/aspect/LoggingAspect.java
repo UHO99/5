@@ -1,5 +1,6 @@
 package com.mycom.myapp.team5.global.aspect;
 
+import com.mycom.myapp.team5.global.common.util.MaskingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterThrowing;
@@ -12,24 +13,25 @@ import org.springframework.stereotype.Component;
 @Component
 public class LoggingAspect {
 
-    @Before("execution(* com.mycom.app..*(..))")
+    private static final String POINTCUT =
+            "execution(* com.mycom.myapp.team5.domain..controller..*(..)) "
+                    + "|| execution(* com.mycom.myapp.team5.domain..service..*(..))";
+
+    @Before(POINTCUT)
     public void logBefore(JoinPoint joinPoint) {
         String methodName = joinPoint.getSignature().getName();
         String className = joinPoint.getTarget().getClass().getName();
-        String methodParams = joinPoint.getArgs().toString();
-        String classParams = joinPoint.getArgs().toString();
+        String maskedArgs = MaskingUtils.maskForLog(joinPoint.getArgs());
 
-        log.info("{} {} {} {}", methodName, className, methodParams, classParams);
+        log.info("{} {} args={}", methodName, className, maskedArgs);
     }
 
-    @AfterThrowing(pointcut = "execution(* com.mycom.app..*(..))")
-    public void logAfterThrowing(JoinPoint joinPoint) {
+    @AfterThrowing(pointcut = POINTCUT, throwing = "ex")
+    public void logAfterThrowing(JoinPoint joinPoint, Throwable ex) {
         String methodName = joinPoint.getSignature().getName();
         String className = joinPoint.getTarget().getClass().getName();
-        String methodParams = joinPoint.getArgs().toString();
-        String classParams = joinPoint.getArgs().toString();
+        String maskedArgs = MaskingUtils.maskForLog(joinPoint.getArgs());
 
-        log.info("{} {} {} {}", methodName, className, methodParams, classParams);
+        log.error("{} {} args={} error={}", methodName, className, maskedArgs, ex.toString());
     }
-
 }
