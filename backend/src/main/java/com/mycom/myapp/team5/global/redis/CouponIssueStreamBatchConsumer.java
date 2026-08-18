@@ -1,9 +1,5 @@
 package com.mycom.myapp.team5.global.redis;
 
-import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
-import com.mycom.myapp.team5.domain.coupon.repository.CouponRepository;
-import com.mycom.myapp.team5.global.common.enums.CouponStatus;
-import com.mycom.myapp.team5.global.config.RedisStreamConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -23,7 +19,6 @@ import org.springframework.stereotype.Component;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,15 +48,9 @@ public class CouponIssueStreamBatchConsumer {
 
     @Scheduled(fixedDelay = 100)
     public void consume() {
-        List<String> streamKeys = activeStreamKeys();
-        if (streamKeys.isEmpty()) {
-            return;
-        }
-
         List<MapRecord<String, String, String>> records = stringRedisTemplate.<String, String>opsForStream().read(
                 Consumer.from(CouponStreamKeys.CONSUMER_GROUP, CouponStreamKeys.CONSUMER_NAME),
                 StreamReadOptions.empty().count(BATCH_SIZE).block(Duration.ofSeconds(2)),
-                streamOffsets(streamKeys)
         );
 
         if (records == null || records.isEmpty()) {
@@ -127,7 +116,6 @@ public class CouponIssueStreamBatchConsumer {
 
             try {
                 jdbcTemplate.update(INSERT_SQL, userId, couponId);
-                acknowledge(record.getStream(), record.getId());
             } catch (DataAccessException e) {
                 log.error("발급 이력 저장 실패(제약 위반) - couponId={}, userId={}, recordId={} - ACK 보류, 확인 필요", couponId, userId, record.getId(), e);
             }
@@ -135,15 +123,7 @@ public class CouponIssueStreamBatchConsumer {
     }
 
     private void acknowledge(List<MapRecord<String, String, String>> records) {
-        Map<String, List<RecordId>> byStream = records.stream()
-                .collect(Collectors.groupingBy(
-                        MapRecord::getStream,
-                        Collectors.mapping(Record::getId, Collectors.toList())
-                ));
-        byStream.forEach((streamKey, recordIds) -> acknowledge(streamKey, recordIds.toArray(new RecordId[0])));
     }
 
-    private void acknowledge(String streamKey, RecordId... recordIds) {
-        stringRedisTemplate.opsForStream().acknowledge(streamKey, CouponStreamKeys.CONSUMER_GROUP, recordIds);
     }
 }
