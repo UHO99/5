@@ -16,12 +16,13 @@ import java.util.Properties;
 import java.util.Random;
 
 /**
- * 더미데이터 생성 도구 - (수동 실행)
+ * 더미데이터 생성 도구 (수동 실행).
  *
- * 사전 조건
- * 1) MySQL              : SET GLOBAL local_infile = 1;
- * 2) application-dev.properties 의 url : ...;allowLoadLocalInfile=true
- *
+ * <p>사전 조건
+ * <pre>
+ * 1) MySQL : SET GLOBAL local_infile = 1;
+ * 2) application-dev.properties 의 url : ...&amp;allowLoadLocalInfile=true
+ * </pre>
  */
 public class DummyDataGenerator {
 
@@ -61,26 +62,8 @@ public class DummyDataGenerator {
 
     public static void main(String[] args) throws Exception {
         generateCsv();
-
-        // 제약 검사 on/off 로 각각 적재해 소요 시간을 비교한다.
-        long withChecks = load(false);
-        long noChecks   = load(true);
-        printComparison(withChecks, noChecks);
-
+        load(true);
         verify();
-    }
-
-    private static void printComparison(long withChecks, long noChecks) {
-        System.out.println();
-        System.out.println("-- 제약 검사 on/off 적재 시간 비교 --------------");
-        System.out.printf("  제약 ON  : %,7dms%n", withChecks);
-        System.out.printf("  제약 OFF : %,7dms%n", noChecks);
-        if (noChecks > 0) {
-            System.out.printf("  차이     : %,7dms  (%.2f배)%n",
-                    withChecks - noChecks, withChecks / (double) noChecks);
-        }
-        System.out.println("------------------------------------------------");
-        System.out.println();
     }
 
     // ── 1) CSV 생성 ─────────────────────────────────────
@@ -112,8 +95,8 @@ public class DummyDataGenerator {
     /**
      * CSV 를 users 테이블에 적재하고 소요 시간(ms)을 반환한다.
      *
-     * @param skipChecks true 면 FK/UNIQUE 검사를 끄고 적재한다.
-     *
+     * @param skipChecks true 면 FK/UNIQUE 검사를 끄고 적재한다
+     * @return 적재 소요 시간(ms)
      */
     private static long load(boolean skipChecks) throws Exception {
         String path = OUT.toString().replace('\\', '/');
@@ -182,7 +165,12 @@ public class DummyDataGenerator {
         }
 
         String url = p.getProperty("spring.datasource.url");
-        if (url == null || !url.contains("allowLoadLocalInfile=true")) {
+        if (url == null || url.isBlank()) {
+            throw new IllegalStateException(
+                    "spring.datasource.url 이 설정되지 않았습니다. "
+                  + "application-dev.properties 를 확인하세요.");
+        }
+        if (!url.contains("allowLoadLocalInfile=true")) {
             System.err.println("[경고] url 에 allowLoadLocalInfile=true 가 없습니다. "
                              + "LOAD DATA 가 거부될 수 있습니다.");
         }
