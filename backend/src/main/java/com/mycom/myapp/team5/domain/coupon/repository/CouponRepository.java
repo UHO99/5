@@ -34,4 +34,8 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     
     // (유스 케이스 S011) 종료 시각이 지났는데 아직 OPEN인 쿠폰 (자동 CLOSE 대상)
     List<Coupon> findByStatusAndEndAtLessThanEqual(CouponStatus status, LocalDateTime now);
+
+    // S013 재검증 대상 - 한 번 정합성이 확정된(consistencyConfirmedAt != null) 쿠폰은 영구히 제외해
+    // CLOSE 누적 건수만큼 매 사이클 부하가 무한정 커지는 것을 막는다.
+    List<Coupon> findByStatusAndConsistencyConfirmedAtIsNull(CouponStatus status);
 }

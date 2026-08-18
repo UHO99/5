@@ -26,8 +26,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -52,9 +50,6 @@ public class CouponIssueStreamBatchConsumer {
     private final JdbcTemplate jdbcTemplate;
     private final CouponRepository couponRepository;
     private final RedisStreamConfig redisStreamConfig;
-
-    // 쿠폰 스트림마다 컨슈머 그룹을 매 사이클 다시 만들려고 시도하지 않도록 캐싱한다.
-    private final Set<String> knownGroups = ConcurrentHashMap.newKeySet();
 
     @Scheduled(fixedDelay = 100)
     public void consume() {
@@ -95,9 +90,7 @@ public class CouponIssueStreamBatchConsumer {
 
     private String resolveStreamKey(long couponId) {
         String streamKey = CouponStreamKeys.streamKey(couponId);
-        if (knownGroups.add(streamKey)) {
-            redisStreamConfig.ensureConsumerGroup(streamKey);
-        }
+        redisStreamConfig.ensureConsumerGroup(streamKey);
         return streamKey;
     }
 
