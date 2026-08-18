@@ -132,7 +132,9 @@ public class CrudConcurrencyTest {
         assertThat(successCount.get()).isEqualTo(INITIAL_STOCK);
 
         printReport(wallElapsedMs, result.getTotalQuantity(), successCount.get(),
+
                 maxThreadsAwaitingConnection.get() > 0, latencies, peakUsedBytes.get());
+
     }
 
     private void printReport(
