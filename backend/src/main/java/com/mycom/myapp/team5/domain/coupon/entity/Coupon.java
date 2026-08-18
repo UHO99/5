@@ -51,6 +51,14 @@ public class Coupon {
     @Column(name = "issued_quantity")
     private Integer issuedQuantity;
 
+    /**
+     * S013 정합성 검증 배치가 "드레인 완료 + 기록값=실측값"을 처음 확인한 시각.
+     * null이면 아직 확정되지 않아 S013 재검증 대상. 한 번 채워지면 S013 대상에서 영구히 제외되고,
+     * 이 시점에 해당 쿠폰의 Redis Stream/컨슈머 그룹도 함께 정리된다.
+     */
+    @Column(name = "consistency_confirmed_at")
+    private LocalDateTime consistencyConfirmedAt;
+
     @Builder
     public Coupon(String name, Integer totalQuantity, LocalDateTime startAt, LocalDateTime endAt) {
         this.name = name;
@@ -80,5 +88,9 @@ public class Coupon {
 
     public void syncIssuedQuantity(int issuedQuantity) {
         this.issuedQuantity = issuedQuantity;
+    }
+
+    public void confirmConsistency(LocalDateTime confirmedAt) {
+        this.consistencyConfirmedAt = confirmedAt;
     }
 }
