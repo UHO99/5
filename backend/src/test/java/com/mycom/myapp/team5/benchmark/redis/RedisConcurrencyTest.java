@@ -61,8 +61,7 @@ public class RedisConcurrencyTest {
 					if (success) {
 						successCount.incrementAndGet();
 					}
-				}
-				finally {
+				} finally {
 					requestsDone.countDown();
 				}
 			});
