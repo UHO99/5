@@ -29,6 +29,10 @@ public class CouponController {
             @PathVariable long couponId,
             @RequestParam long userId
     ) {
+    	// 발급 전 OPEN 상태 검증 (READY/CLOSE/미존재 쿠폰은 여기서 차단)
+    	couponService.validateIssueable(couponId);
+    	
+    	// Redis 재고 차감 + Stream 적재 (기존 파잎프라인 유지)
         producer.requestIssue(couponId, userId);
 
         return ResponseEntity.accepted().build();
