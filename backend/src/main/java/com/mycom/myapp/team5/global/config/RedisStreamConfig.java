@@ -51,7 +51,7 @@ public class RedisStreamConfig {
      */
     public boolean retireStream(String streamKey) {
         if (hasUndeliveredEntries(streamKey)) {
-            log.error("Redis Stream 정리 보류 - 컨슈머 그룹이 아직 못 읽은 엔트리가 남아있음(재고 차감/XADD 사이 레이스 의심). streamKey={}", streamKey);
+            log.error("Redis Stream 정리 보류 - 컨슈머 그룹이 아직 못 읽은 엔트리가 남아있음(재고 차감/XADD 사이 경합 의심). streamKey={}", streamKey);
             return false;
         }
 
