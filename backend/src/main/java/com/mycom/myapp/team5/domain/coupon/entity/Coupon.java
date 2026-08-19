@@ -78,6 +78,21 @@ public class Coupon {
         this.updatedAt = LocalDateTime.now();
     }
 
+    /**
+     * A004: 재고/기간 변경. null인 항목은 유지한다.
+     */
+    public void updateStockAndPeriod(Integer totalQuantity, LocalDateTime startAt, LocalDateTime endAt) {
+        if (totalQuantity != null) {
+            this.totalQuantity = totalQuantity;
+        }
+        if (startAt != null) {
+            this.startAt = startAt;
+        }
+        if (endAt != null) {
+            this.endAt = endAt;
+        }
+    }
+
     public void open() {
         this.status = CouponStatus.OPEN;
     }
