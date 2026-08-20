@@ -107,4 +107,15 @@ public class CouponServiceImpl implements CouponService {
         return granted;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public void validateIssueable(long couponId) {
+        Coupon coupon = couponRepository.findById(couponId)
+                .orElseThrow(() -> new CouponException(CouponErrorCode.COUPON_NOT_FOUND));
+
+        if (coupon.getStatus() != CouponStatus.OPEN) {
+            throw new CouponException(CouponErrorCode.COUPON_NOT_OPEN);
+        }
+    }
+
 }

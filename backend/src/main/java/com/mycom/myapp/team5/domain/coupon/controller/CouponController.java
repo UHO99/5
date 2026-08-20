@@ -41,6 +41,7 @@ public class CouponController {
             @PathVariable long couponId,
             @RequestParam long userId
     ) {
+        couponService.validateIssueable(couponId);
         producer.requestIssue(couponId, userId);
         return ResponseEntity.accepted().build();
     }
