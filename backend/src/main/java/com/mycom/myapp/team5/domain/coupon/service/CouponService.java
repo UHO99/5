@@ -2,7 +2,10 @@ package com.mycom.myapp.team5.domain.coupon.service;
 
 import com.mycom.myapp.team5.domain.coupon.dto.CouponRequest;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
+import com.mycom.myapp.team5.domain.coupon.dto.CouponSummary;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponUpdateRequest;
+
+import java.util.List;
 
 public interface CouponService {
 
@@ -21,4 +24,6 @@ public interface CouponService {
      * READY/CLOSE 상태면 COUPON_NOT_OPEN(CP002), 존재하지 않으면 COUPON_NOT_FOUND(CP001) 예외 발생
      */
     void validateIssueable(long couponId);
+
+    List<CouponSummary> listAll();
 }

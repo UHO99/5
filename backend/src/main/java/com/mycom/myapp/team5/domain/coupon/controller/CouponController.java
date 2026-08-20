@@ -46,6 +46,12 @@ public class CouponController {
         return ResponseEntity.ok(ApiResponse.success(couponService.getCoupon(couponId)));
     }
 
+    // 쿠폰 선택 UI(모니터링 대시보드 등)에서 쓰는 전체 목록 조회
+    @GetMapping("/api/admin/coupons")
+    public ResponseEntity<ApiResponse<List<CouponSummary>>> listCoupons() {
+        return ResponseEntity.ok(ApiResponse.success(couponService.listAll()));
+    }
+
     // 수동 OPEN : READY -> OPEN + Redis 재고 초기화 (스케줄러와 동일 로직 공유)
     @PostMapping("/api/admin/coupons/{couponId}/open")
     public ResponseEntity<ApiResponse<Void>> openCoupon(@PathVariable long couponId){
