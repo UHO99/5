@@ -80,6 +80,12 @@ public class CouponIssueStreamConsumer implements StreamListener<String, MapReco
     private volatile boolean running = false;
     private Thread flushThread;
 
+    // 테스트가 "구독 해제까지 끝났는지"를 폴링으로 확인할 수 있게 열어둔 조회용 메서드.
+    // 구독 해제 전에 스트림 키를 지우면 이 스트림을 폴링 중이던 컨슈머가 NOGROUP 예외를 겪는다.
+    public boolean isSubscribed(String streamKey) {
+        return subscriptions.containsKey(streamKey);
+    }
+
     // 컨테이너 전용 스레드에서 레코드 1건씩 호출된다 - 여기서 무거운 작업(JDBC)을 하면 그 스트림의
     // 다음 read가 막히므로, 버퍼에 넣고 바로 리턴한다. 실제 insert는 flushLoop()가 따로 한다.
     @Override
