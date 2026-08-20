@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -70,6 +71,17 @@ public class CouponServiceImpl implements CouponService {
         Coupon coupon = couponRepository.findById(couponId)
                 .orElseThrow(() -> new CouponException(CouponErrorCode.COUPON_NOT_FOUND));
         return CouponResponse.from(coupon);
+    }
+
+    /**
+     * U001: 쿠폰 목록 조회.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<CouponResponse> getCoupons() {
+        return couponRepository.findAll().stream()
+                .map(CouponResponse::from)
+                .toList();
     }
 
     private void validatePeriod(LocalDateTime startAt, LocalDateTime endAt) {
