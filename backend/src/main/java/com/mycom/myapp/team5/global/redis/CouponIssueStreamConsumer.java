@@ -3,6 +3,7 @@ package com.mycom.myapp.team5.global.redis;
 import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
 import com.mycom.myapp.team5.domain.coupon.event.CouponOpenedEvent;
 import com.mycom.myapp.team5.domain.coupon.repository.CouponRepository;
+import com.mycom.myapp.team5.domain.monitoring.metric.DbInsertMetricsRecorder;
 import com.mycom.myapp.team5.global.common.enums.CouponStatus;
 import com.mycom.myapp.team5.global.config.RedisStreamConfig;
 import jakarta.annotation.PostConstruct;
@@ -73,6 +74,7 @@ public class CouponIssueStreamConsumer implements StreamListener<String, MapReco
     private final JdbcTemplate jdbcTemplate;
     private final CouponRepository couponRepository;
     private final RedisStreamConfig redisStreamConfig;
+    private final DbInsertMetricsRecorder dbInsertMetricsRecorder;
 
     private final Map<String, Subscription> subscriptions = new ConcurrentHashMap<>();
     private final BlockingQueue<MapRecord<String, String, String>> buffer = new LinkedBlockingQueue<>();
@@ -84,6 +86,11 @@ public class CouponIssueStreamConsumer implements StreamListener<String, MapReco
     // 구독 해제 전에 스트림 키를 지우면 이 스트림을 폴링 중이던 컨슈머가 NOGROUP 예외를 겪는다.
     public boolean isSubscribed(String streamKey) {
         return subscriptions.containsKey(streamKey);
+    }
+
+    // 모니터링 대시보드용 - 현재 이 컨슈머가 붙들고 있는 스트림(=쿠폰) 구독 수.
+    public int activeSubscriptionCount() {
+        return subscriptions.size();
     }
 
     // 컨테이너 전용 스레드에서 레코드 1건씩 호출된다 - 여기서 무거운 작업(JDBC)을 하면 그 스트림의
@@ -181,6 +188,7 @@ public class CouponIssueStreamConsumer implements StreamListener<String, MapReco
                 }
                 try {
                     insertBatch(batch);
+                    dbInsertMetricsRecorder.recordBatch(batch.size());
                     log.info("발급 이력 배치 저장 완료 - count={}", batch.size());
                     acknowledge(batch);
                 } catch (DataAccessException e) {
@@ -234,6 +242,7 @@ public class CouponIssueStreamConsumer implements StreamListener<String, MapReco
 
             try {
                 jdbcTemplate.update(INSERT_SQL, userId, couponId);
+                dbInsertMetricsRecorder.recordBatch(1);
                 acknowledge(record.getStream(), record.getId());
             } catch (DataAccessException e) {
                 log.error("발급 이력 저장 실패(제약 위반) - couponId={}, userId={}, recordId={} - ACK 보류, 확인 필요", couponId, userId, record.getId(), e);

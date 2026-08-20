@@ -1,4 +1,4 @@
-import type { DashboardVals } from "../hooks/useDashboardSimulation";
+import type { DashboardVals } from "../hooks/useMonitoringDashboard";
 
 export function ServerResourceCard({ vals }: { vals: DashboardVals }) {
   return (

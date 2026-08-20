@@ -34,7 +34,8 @@ export const options = {
 };
 
 export default function () {
-    const userId = `${__VU}_${__ITER}`;
+    const USER_POOL_SIZE = Number(__ENV.USER_POOL_SIZE || 20_000);
+    const userId = ((__VU * 1000 + __ITER) % USER_POOL_SIZE) + 1;
     const res = http.post(`${BASE_URL}/${COUPON_ID}/issue?userId=${userId}`); // Kafka
     // const res = http.post(`${BASE_URL}/${COUPON_ID}/issue?userId=${userId}`); // Redis
     // const res = http.post(`${BASE_URL}/${COUPON_ID}/issue?userId=${userId}`); // CRUD
