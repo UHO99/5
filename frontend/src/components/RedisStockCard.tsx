@@ -1,6 +1,11 @@
-import type { DashboardVals } from "../hooks/useDashboardSimulation";
+import type { DashboardVals } from "../hooks/useMonitoringDashboard";
 
-export function RedisStockCard({ vals }: { vals: DashboardVals }) {
+interface Props {
+  vals: DashboardVals;
+  onDrainPending: () => void;
+}
+
+export function RedisStockCard({ vals, onDrainPending }: Props) {
   return (
     <div className="card">
       <span className="card-title">재고 · Redis</span>
@@ -36,7 +41,26 @@ export function RedisStockCard({ vals }: { vals: DashboardVals }) {
         </div>
       </div>
 
-      <span className="section-label">Stream PEL (처리 대기)</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span className="section-label" style={{ marginBottom: 0 }}>Stream PEL (처리 대기)</span>
+        {vals.pelCountRaw > 0 && (
+          <button
+            type="button"
+            onClick={onDrainPending}
+            style={{
+              font: "600 10.5px/1 Inter, sans-serif",
+              color: "#dc2626",
+              background: "#fff",
+              border: "1px solid #f3c9c9",
+              borderRadius: 999,
+              padding: "4px 9px",
+              cursor: "pointer",
+            }}
+          >
+            PEL 강제 드레인
+          </button>
+        )}
+      </div>
       <div className="latency-line">
         <div className="bar-track">
           <div className="bar-fill" style={{ background: vals.pelColor, width: vals.pelBarPct }} />

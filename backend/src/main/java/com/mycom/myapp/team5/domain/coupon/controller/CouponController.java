@@ -1,5 +1,6 @@
 package com.mycom.myapp.team5.domain.coupon.controller;
 
+import com.mycom.myapp.team5.domain.coupon.dto.CouponSummary;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +17,8 @@ import com.mycom.myapp.team5.global.redis.CouponIssueStreamProducer;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 public class CouponController {
@@ -31,7 +34,7 @@ public class CouponController {
     ) {
     	// 발급 전 OPEN 상태 검증 (READY/CLOSE/미존재 쿠폰은 여기서 차단)
     	couponService.validateIssueable(couponId);
-    	
+
     	// Redis 재고 차감 + Stream 적재 (기존 파잎프라인 유지)
         producer.requestIssue(couponId, userId);
 
@@ -43,20 +46,26 @@ public class CouponController {
         return ResponseEntity.ok(ApiResponse.success(couponService.getCoupon(couponId)));
     }
 
+    // 쿠폰 선택 UI(모니터링 대시보드 등)에서 쓰는 전체 목록 조회
+    @GetMapping("/api/admin/coupons")
+    public ResponseEntity<ApiResponse<List<CouponSummary>>> listCoupons() {
+        return ResponseEntity.ok(ApiResponse.success(couponService.listAll()));
+    }
+
     // 수동 OPEN : READY -> OPEN + Redis 재고 초기화 (스케줄러와 동일 로직 공유)
     @PostMapping("/api/admin/coupons/{couponId}/open")
     public ResponseEntity<ApiResponse<Void>> openCoupon(@PathVariable long couponId){
     	couponStatusService.openCoupon(couponId);
     	return ResponseEntity.ok(ApiResponse.successNoData());
     }
-    
+
     // 수동 CLOSE : OPEN -> CLOSE + Redis 재고 키 정리
     @PostMapping("/api/admin/coupons/{couponId}/close")
     public ResponseEntity<ApiResponse<Void>> closeCoupon(@PathVariable long couponId){
     	couponStatusService.closeCoupon(couponId);
     	return ResponseEntity.ok(ApiResponse.successNoData());
     }
-    
+
     // 현재 상태 조회 (관리자 확인용)
     @GetMapping("/api/admin/coupons/{couponId}/status")
     public ResponseEntity<ApiResponse<CouponStatus>> getCouponStatus(@PathVariable long couponId){

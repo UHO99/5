@@ -175,6 +175,17 @@ body {
   color: #8b8fa3;
 }
 
+.coupon-select {
+  font: 600 13px/1 "Inter", sans-serif;
+  color: #3a3d4d;
+  background: #fff;
+  border: 1px solid #e7e9f0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  max-width: 260px;
+  cursor: pointer;
+}
+
 .status-pill {
   display: flex;
   align-items: center;
