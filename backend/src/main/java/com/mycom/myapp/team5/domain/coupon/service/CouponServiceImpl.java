@@ -1,12 +1,15 @@
 package com.mycom.myapp.team5.domain.coupon.service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mycom.myapp.team5.domain.coupon.dto.CouponRequest;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
+import com.mycom.myapp.team5.domain.coupon.dto.CouponSummary;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponUpdateRequest;
 import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
 import com.mycom.myapp.team5.domain.coupon.exception.CouponErrorCode;
@@ -100,6 +103,11 @@ public class CouponServiceImpl implements CouponService {
 		if (coupon.getStatus() != CouponStatus.OPEN) {
 			throw new CouponException(CouponErrorCode.COUPON_NOT_OPEN);
 		}
+	}
+
+	@Override
+	public List<CouponSummary> listAll() {
+		return couponRepository.findAll().stream().sorted(Comparator.comparing(Coupon::getId)).map(CouponSummary::from).toList();
 	}
 
 }

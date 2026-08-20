@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { DashboardVals } from "../hooks/useDashboardSimulation";
+import type { DashboardVals } from "../hooks/useMonitoringDashboard";
 import type { K6Scenario } from "../lib/scenarios";
 import { ScenarioDialog } from "./ScenarioDialog";
 
@@ -9,9 +9,10 @@ interface Props {
   onStartTest: (scenario: K6Scenario) => void;
   onStopTest: () => void;
   onLoadData: () => void;
+  onResetMetrics: () => void;
 }
 
-export function FloatingActionMenu({ vals, activeScenario, onStartTest, onStopTest, onLoadData }: Props) {
+export function FloatingActionMenu({ vals, activeScenario, onStartTest, onStopTest, onLoadData, onResetMetrics }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -53,6 +54,16 @@ export function FloatingActionMenu({ vals, activeScenario, onStartTest, onStopTe
               }}
             >
               데이터 적재
+            </button>
+            <button
+              type="button"
+              className="fab-action"
+              onClick={() => {
+                onResetMetrics();
+                setMenuOpen(false);
+              }}
+            >
+              지표 초기화
             </button>
             <button
               type="button"

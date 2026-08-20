@@ -1,12 +1,14 @@
 package com.mycom.myapp.team5.domain.couponissue.repository;
 
-import com.mycom.myapp.team5.domain.couponissue.entity.CouponIssue;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import com.mycom.myapp.team5.domain.couponissue.entity.CouponIssue;
 
 public interface CouponIssueRepository extends JpaRepository<CouponIssue, Long> {
 
@@ -25,4 +27,9 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssue, Long> 
         Long getIssuedCount();
     }
 
+    // (유스케이스 U003) 내 쿠폰 목록 - 최근 발급 순 정렬
+    List<CouponIssue> findByUserIdOrderByIssuedAtDesc(Long userId);
+    
+    // (유스케이스 U003) 본인 소유 쿠폰 단건 - userId로 소유권까지 검증
+    Optional<CouponIssue> findByIdAndUserId(Long id, Long userId);
 }

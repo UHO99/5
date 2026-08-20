@@ -1,4 +1,4 @@
-import type { DashboardVals } from "../hooks/useDashboardSimulation";
+import type { DashboardVals } from "../hooks/useMonitoringDashboard";
 
 export function ApiResponseCard({ vals }: { vals: DashboardVals }) {
   return (
