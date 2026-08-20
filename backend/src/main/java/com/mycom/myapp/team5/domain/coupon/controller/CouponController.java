@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
 import com.mycom.myapp.team5.domain.coupon.service.CouponService;
 import com.mycom.myapp.team5.domain.coupon.service.CouponStatusService;
+import com.mycom.myapp.team5.global.aspect.LogDescription;
 import com.mycom.myapp.team5.global.common.dto.ApiResponse;
 import com.mycom.myapp.team5.global.common.enums.CouponStatus;
 import com.mycom.myapp.team5.global.redis.CouponIssueStreamProducer;
@@ -27,6 +28,7 @@ public class CouponController {
     private final CouponStatusService couponStatusService;				// 상태 전환 서비스 추가
     private final CouponIssueStreamProducer producer;
 
+    @LogDescription("쿠폰 발급 요청")
     @PostMapping("/{couponId}/issue")
     public ResponseEntity<Void> requestIssue(
             @PathVariable long couponId,
@@ -41,18 +43,21 @@ public class CouponController {
         return ResponseEntity.accepted().build();
     }
 
+    @LogDescription("쿠폰 정보 조회")
     @GetMapping("/{couponId}")
     public ResponseEntity<ApiResponse<CouponResponse>> getStock(@PathVariable long couponId) {
         return ResponseEntity.ok(ApiResponse.success(couponService.getCoupon(couponId)));
     }
 
     // 쿠폰 선택 UI(모니터링 대시보드 등)에서 쓰는 전체 목록 조회
+    @LogDescription("전체 쿠폰 목록 조회 (관리자)")
     @GetMapping("/api/admin/coupons")
     public ResponseEntity<ApiResponse<List<CouponSummary>>> listCoupons() {
         return ResponseEntity.ok(ApiResponse.success(couponService.listAll()));
     }
 
     // 수동 OPEN : READY -> OPEN + Redis 재고 초기화 (스케줄러와 동일 로직 공유)
+    @LogDescription("쿠폰 수동 오픈 (관리자)")
     @PostMapping("/api/admin/coupons/{couponId}/open")
     public ResponseEntity<ApiResponse<Void>> openCoupon(@PathVariable long couponId){
     	couponStatusService.openCoupon(couponId);
@@ -60,6 +65,7 @@ public class CouponController {
     }
 
     // 수동 CLOSE : OPEN -> CLOSE + Redis 재고 키 정리
+    @LogDescription("쿠폰 수동 마감 (관리자)")
     @PostMapping("/api/admin/coupons/{couponId}/close")
     public ResponseEntity<ApiResponse<Void>> closeCoupon(@PathVariable long couponId){
     	couponStatusService.closeCoupon(couponId);
@@ -67,6 +73,7 @@ public class CouponController {
     }
 
     // 현재 상태 조회 (관리자 확인용)
+    @LogDescription("쿠폰 상태 조회 (관리자)")
     @GetMapping("/api/admin/coupons/{couponId}/status")
     public ResponseEntity<ApiResponse<CouponStatus>> getCouponStatus(@PathVariable long couponId){
     	return ResponseEntity.ok(ApiResponse.success(couponStatusService.getStatus(couponId)));

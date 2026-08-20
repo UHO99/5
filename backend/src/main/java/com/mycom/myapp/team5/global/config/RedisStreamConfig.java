@@ -69,6 +69,15 @@ public class RedisStreamConfig {
     // XACK는 PEL(배달됐지만 처리 안 된 것)에서만 지울 뿐 스트림 본체에서는 안 지우므로, 정상적으로
     // 처리를 끝낸 스트림도 XLEN은 절대 0이 되지 않는다. "그룹이 스트림 끝까지 다 읽었는가"
     // (그룹의 lastDeliveredId == 스트림의 lastGeneratedId)를 봐야 남은 게 없다고 확신할 수 있다.
+    //
+    // 그룹이 아예 없는 경우(.orElse)는 "재고 차감(Lua)과 XADD 사이 경합" 레이스와는 무관하다 -
+    // 그 레이스는 그룹이 이미 존재해야(=쿠폰이 한 번이라도 OPEN돼야) 성립하는데, retireStream()의
+    // 대상은 전부 CLOSE 쿠폰이라 새 발급(XADD)이 들어올 수 없다. 즉 그룹이 없는 상태에서 "아직
+    // 처리 중"일 가능성은 없고, 남은 설명은 ① 그룹 없이 스트림에만 메시지가 들어간 이례적 경로
+    // (테스트/수동 스크립트 등), ② destroyGroup()은 성공하고 delete(streamKey) 직전에 중단된
+    // retireStream() 재시도 상황 둘 중 하나뿐이며 - 둘 다 지워도 안전하다. 그래서 여기서는 false
+    // (드레인된 것으로 취급)로 판단한다. 실제 레이스 보호는 위 .map() 분기(그룹이 있을 때 마지막
+    // 전달 ID 비교)가 담당한다.
     private boolean hasUndeliveredEntries(String streamKey) {
         StreamInfo.XInfoStream streamInfo;
         try {
@@ -84,7 +93,7 @@ public class RedisStreamConfig {
                 .filter(group -> CouponStreamKeys.CONSUMER_GROUP.equals(group.groupName()))
                 .findFirst()
                 .map(group -> !group.lastDeliveredId().equals(streamInfo.lastGeneratedId()))
-                .orElse(true); // 엔트리는 있는데 그룹이 없다 - 비정상 상태이니 보수적으로 보류
+                .orElse(false); // 엔트리는 있는데 그룹이 없다 - CLOSE 쿠폰이라 더 들어올 요청도 없으므로 드레인된 것으로 취급
     }
 
 }

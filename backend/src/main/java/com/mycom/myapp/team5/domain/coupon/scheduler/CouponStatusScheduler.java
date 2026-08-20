@@ -69,13 +69,21 @@ public class CouponStatusScheduler {
 	@Scheduled(fixedDelay = 60_000)
 	public void replenishMissingStock() {
 		List<Coupon> openCoupons = couponRepository.findByStatus(CouponStatus.OPEN);
-		
+
         for (Coupon coupon : openCoupons) {
             if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(CouponStockKeys.stockKey(coupon.getId())))) {
-                couponStockRedisService.initStock(coupon.getId(), coupon.getTotalQuantity());
-                log.info("Redis 재고 보정 완료 - couponId={}, stock={}",
-                        coupon.getId(), coupon.getTotalQuantity());
+                long remaining = remainingStock(coupon);
+                couponStockRedisService.initStock(coupon.getId(), (int) remaining);
+                log.info("Redis 재고 보정 완료 - couponId={}, totalQuantity={}, remaining={}",
+                        coupon.getId(), coupon.getTotalQuantity(), remaining);
             }
         }
 	}
+
+	private long remainingStock(Coupon coupon) {
+		Long issuedCount = stringRedisTemplate.opsForSet().size(CouponStockKeys.issuedSetKey(coupon.getId()));
+		long issued = issuedCount == null ? 0 : issuedCount;
+		return Math.max(0, coupon.getTotalQuantity() - issued);
+	}
+
 }
