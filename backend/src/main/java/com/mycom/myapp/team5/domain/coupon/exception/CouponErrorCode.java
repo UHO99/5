@@ -15,6 +15,7 @@ public enum CouponErrorCode implements ErrorCode {
     COUPON_INVALID_PERIOD(HttpStatus.BAD_REQUEST, "CP004", "발급 종료 시각은 시작 시각보다 이후여야 합니다."),
 
     COUPON_ISSUE_DUPLICATE(HttpStatus.CONFLICT, "CI001", "쿠폰 중복 발급"),
+    COUPON_ISSUE_NOT_FOUND(HttpStatus.NOT_FOUND, "CI002", "쿠폰 발급 이력이 없습니다."),
 
     COUPON_INVENTORY_NOT_STOCKED(HttpStatus.NO_CONTENT, "RD001", "재고 미적재"),
     COUPON_SOLD_OUT(HttpStatus.NO_CONTENT, "RD002", "재고 소진"),
