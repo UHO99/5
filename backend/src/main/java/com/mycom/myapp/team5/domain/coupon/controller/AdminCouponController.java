@@ -1,5 +1,6 @@
 package com.mycom.myapp.team5.domain.coupon.controller;
 
+import com.mycom.myapp.team5.domain.coupon.dto.CouponOverviewResponse;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponRequest;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponUpdateRequest;
@@ -9,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,8 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
- * A003/A004 관리자 쿠폰 API.
+ * A003/A004/A005 관리자 쿠폰 API.
  * Redis initStock은 호출하지 않는다 — OPEN 스케줄에서 적재.
  */
 @RestController
@@ -42,5 +46,17 @@ public class AdminCouponController {
             @Valid @RequestBody CouponUpdateRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(couponService.update(couponId, request)));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<CouponOverviewResponse>>> getOverviews() {
+        return ResponseEntity.ok(ApiResponse.success(couponService.getOverviews()));
+    }
+
+    @GetMapping("/{couponId}")
+    public ResponseEntity<ApiResponse<CouponOverviewResponse>> getOverview(
+            @PathVariable long couponId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(couponService.getOverview(couponId)));
     }
 }

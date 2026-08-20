@@ -1,5 +1,6 @@
 package com.mycom.myapp.team5.domain.coupon.service;
 
+import com.mycom.myapp.team5.domain.coupon.dto.CouponOverviewResponse;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponRequest;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponUpdateRequest;
@@ -7,7 +8,9 @@ import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
 import com.mycom.myapp.team5.domain.coupon.exception.CouponErrorCode;
 import com.mycom.myapp.team5.domain.coupon.exception.CouponException;
 import com.mycom.myapp.team5.domain.coupon.repository.CouponRepository;
+import com.mycom.myapp.team5.domain.couponissue.repository.CouponIssueRepository;
 import com.mycom.myapp.team5.global.common.enums.CouponStatus;
+import com.mycom.myapp.team5.global.redis.CouponStockRedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,8 @@ import java.util.List;
 public class CouponServiceImpl implements CouponService {
 
     private final CouponRepository couponRepository;
+    private final CouponIssueRepository couponIssueRepository;
+    private final CouponStockRedisService couponStockRedisService;
 
     @Override
     public CouponResponse getExampleById(Long id) {
@@ -82,6 +87,41 @@ public class CouponServiceImpl implements CouponService {
         return couponRepository.findAll().stream()
                 .map(CouponResponse::from)
                 .toList();
+    }
+
+    /**
+     * A005: 단건 현황 (DB 발급 건수 + Redis 잔여).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public CouponOverviewResponse getOverview(long couponId) {
+        Coupon coupon = couponRepository.findById(couponId)
+                .orElseThrow(() -> new CouponException(CouponErrorCode.COUPON_NOT_FOUND));
+        return toOverview(coupon);
+    }
+
+    /**
+     * A005: 전체 현황 목록.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<CouponOverviewResponse> getOverviews() {
+        return couponRepository.findAll().stream()
+                .map(this::toOverview)
+                .toList();
+    }
+
+    private CouponOverviewResponse toOverview(Coupon coupon) {
+        long issued = resolveIssuedQuantity(coupon);
+        Integer redisRemaining = couponStockRedisService.getStock(coupon.getId());
+        return CouponOverviewResponse.of(coupon, issued, redisRemaining);
+    }
+
+    private long resolveIssuedQuantity(Coupon coupon) {
+        if (coupon.getIssuedQuantity() != null) {
+            return coupon.getIssuedQuantity();
+        }
+        return couponIssueRepository.countByCouponId(coupon.getId());
     }
 
     private void validatePeriod(LocalDateTime startAt, LocalDateTime endAt) {

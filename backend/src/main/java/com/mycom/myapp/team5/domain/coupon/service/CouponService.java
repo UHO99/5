@@ -1,5 +1,6 @@
 package com.mycom.myapp.team5.domain.coupon.service;
 
+import com.mycom.myapp.team5.domain.coupon.dto.CouponOverviewResponse;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponRequest;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponUpdateRequest;
@@ -17,6 +18,10 @@ public interface CouponService {
     CouponResponse getCoupon(long couponId);
 
     List<CouponResponse> getCoupons();
+
+    CouponOverviewResponse getOverview(long couponId);
+
+    List<CouponOverviewResponse> getOverviews();
 
     int decreaseStockBatch(long couponId, int requestedCount);
 
