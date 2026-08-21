@@ -3,7 +3,9 @@ package com.mycom.myapp.team5.domain.couponissue.repository;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +31,18 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssue, Long> 
 
     // (유스케이스 U003) 내 쿠폰 목록 - 최근 발급 순 정렬
     List<CouponIssue> findByUserIdOrderByIssuedAtDesc(Long userId);
-    
+
     // (유스케이스 U003) 본인 소유 쿠폰 단건 - userId로 소유권까지 검증
     Optional<CouponIssue> findByIdAndUserId(Long id, Long userId);
 
     // 시나리오 7: 관리자 — 특정 쿠폰의 전체 발급 이력 (최근 발급 순)
     List<CouponIssue> findByCouponIdOrderByIssuedAtDesc(Long couponId);
+
+    // "몇 번째로 발급받았는지" - 발급 id는 auto-increment라 오름차순 = 발급 순서.
+    long countByCouponIdAndIdLessThanEqual(Long couponId, Long id);
+
+    // (유스케이스 U004) 비관적 락으로 소유권 검증 + 조회
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ci FROM CouponIssue ci WHERE ci.id = :id AND ci.userId = :userId")
+    Optional<CouponIssue> findByIdAndUserIdForUpdate(@Param("id") Long id, @Param("userId") Long userId);
 }

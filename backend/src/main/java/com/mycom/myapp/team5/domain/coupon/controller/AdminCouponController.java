@@ -75,8 +75,13 @@ public class AdminCouponController {
 
     @LogDescription("전체 쿠폰 목록 조회 (관리자)")
     @GetMapping("/api/admin/coupons")
-    public ResponseEntity<ApiResponse<List<CouponSummary>>> listCoupons() {
-        return ResponseEntity.ok(ApiResponse.success(couponService.listAll()));
+    public ResponseEntity<ApiResponse<List<CouponSummary>>> listCoupons(
+            @RequestParam(required = false) CouponStatus status
+    ) {
+        List<CouponSummary> coupons = status != null
+                ? couponService.listByStatus(status)
+                : couponService.listAll();
+        return ResponseEntity.ok(ApiResponse.success(coupons));
     }
 
     @LogDescription("쿠폰 수동 오픈 (관리자)")

@@ -168,4 +168,13 @@ public class CouponServiceImpl implements CouponService {
                 .map(CouponSummary::from)
                 .toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CouponSummary> listByStatus(CouponStatus status) {
+        return couponRepository.findByStatus(status).stream()
+                .sorted(Comparator.comparing(Coupon::getId))
+                .map(CouponSummary::from)
+                .toList();
+    }
 }

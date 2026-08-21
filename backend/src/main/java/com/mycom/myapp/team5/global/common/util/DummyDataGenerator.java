@@ -1,5 +1,7 @@
 package com.mycom.myapp.team5.global.common.util;
 
+import com.mycom.myapp.team5.domain.test.controller.DummyDataController;
+
 import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,12 +16,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 import java.util.Random;
+import javax.sql.DataSource;
 
  /**
- * 더미데이터 생성 도구 (수동 실행)
+ * 더미데이터 생성 도구
+ * IntelliJ에서 main()으로 단독 실행할 수도 있고, {@link DummyDataController}처럼 Spring
+ * 컨텍스트 안에서 {@link #run(DataSource)}로 호출할 수도 있다 - DataSource를 넘기면 그 커넥션을
+ * 쓰고, null이면(단독 실행) application-dev.properties를 직접 읽어 접속한다.
  * 사전 조건
  * 1) MySQL : SET GLOBAL local_infile = 1;
- * 2) application-dev.properties 의 url : ...&amp;allowLoadLocalInfile=true
+ * 2) 단독 실행 시 application-dev.properties 의 url : ...&amp;allowLoadLocalInfile=true
  *
  */
 public class DummyDataGenerator {
@@ -58,10 +64,24 @@ public class DummyDataGenerator {
     private static final DateTimeFormatter FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /** 적재된 users 건수와 단계별 소요시간(대시보드 시각화용). */
+    public record Result(long userCount, long csvGenMs, long loadMs) {}
+
     public static void main(String[] args) throws Exception {
+        run(null);
+    }
+
+    /**
+     * dataSource가 있으면(Spring 컨텍스트 안) 그 커넥션을 쓰고, null이면 단독 실행용 접속을 쓴다.
+     */
+    public static Result run(DataSource dataSource) throws Exception {
+        long t0 = System.currentTimeMillis();
         generateCsv();
-        load();
-        verify();
+        long t1 = System.currentTimeMillis();
+        long rows = load(dataSource);
+        long t2 = System.currentTimeMillis();
+        verify(dataSource);
+        return new Result(rows, t1 - t0, t2 - t1);
     }
 
     // ── 1) CSV 생성 ─────────────────────────────────────
@@ -93,21 +113,22 @@ public class DummyDataGenerator {
     /**
      * CSV 를 users 테이블에 적재
      * 대량 적재 동안에는 FK/UNIQUE 검사를 끈다. 생성 단계에서 정합성을 보장하고
-     * 적재 후 {@link #verify()} 로 직접 확인한다.
+     * 적재 후 {@link #verify(DataSource)} 로 직접 확인한다.
      */
-    private static void load() throws Exception {
+    private static long load(DataSource dataSource) throws Exception {
         String path = OUT.toString().replace('\\', '/');
         String sql = "LOAD DATA LOCAL INFILE '" + path + "' "
                    + "INTO TABLE users CHARACTER SET utf8mb4 "
                    + "FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n' "
                    + "(id, email, name, phone, created_at)";
 
-        try (Connection con = connect();
+        try (Connection con = connect(dataSource);
              Statement st = con.createStatement()) {
 
             st.execute("SET FOREIGN_KEY_CHECKS = 0");
             st.execute("SET UNIQUE_CHECKS = 0");
             st.execute("TRUNCATE TABLE users");
+            System.out.println("TRUNCATE : users 비움");
 
             long start = System.currentTimeMillis();
             int rows = st.executeUpdate(sql);
@@ -117,12 +138,13 @@ public class DummyDataGenerator {
             st.execute("SET FOREIGN_KEY_CHECKS = 1");
 
             System.out.printf("적재    : %,d건  %,dms%n", rows, elapsed);
+            return rows;
         }
     }
 
     // ── 3) 검증 ─────────────────────────────────────────
-    private static void verify() throws Exception {
-        try (Connection con = connect();
+    private static void verify(DataSource dataSource) throws Exception {
+        try (Connection con = connect(dataSource);
              Statement st = con.createStatement()) {
 
             try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM users")) {
@@ -139,8 +161,13 @@ public class DummyDataGenerator {
         }
     }
 
-    // ── DB 접속 (application-dev.properties 재사용) ─────
-    private static Connection connect() throws Exception {
+    // ── DB 접속 : dataSource가 있으면(Spring 컨텍스트) 그 커넥션을 쓰고,
+    // 없으면(단독 실행) application-dev.properties를 직접 읽는다 ─────
+    private static Connection connect(DataSource dataSource) throws Exception {
+        if (dataSource != null) {
+            return dataSource.getConnection();
+        }
+
         Properties p = new Properties();
         try (InputStream in = DummyDataGenerator.class.getClassLoader()
                 .getResourceAsStream("application-dev.properties")) {

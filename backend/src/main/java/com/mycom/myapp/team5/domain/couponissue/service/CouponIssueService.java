@@ -21,4 +21,12 @@ public interface CouponIssueService {
 	 */
 	@LogDescription("관리자 쿠폰 발급 내역 조회")
 	List<CouponIssueHistoryResponse> getIssuesByCouponId(long couponId);
+
+	// 쿠폰 사용 (본인 소유, ISSUED만 가능, 그 외 CI003)
+	@LogDescription("내 쿠폰 사용")
+	void useCoupon(long userId, long issueId);
+
+	// 쿠폰 취소 (본인 소유, ISSUED만 가능, 그 외 CI003)
+	@LogDescription("내 쿠폰 취소")
+	void cancelCoupon(long userId, long issueId);
 }
