@@ -15,6 +15,7 @@ import com.mycom.myapp.team5.domain.coupon.repository.CouponRepository;
 import com.mycom.myapp.team5.domain.couponissue.dto.MyCouponResponse;
 import com.mycom.myapp.team5.domain.couponissue.entity.CouponIssue;
 import com.mycom.myapp.team5.domain.couponissue.repository.CouponIssueRepository;
+import com.mycom.myapp.team5.global.common.enums.CouponIssueStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -52,6 +53,30 @@ public class CouponIssueServiceImpl implements CouponIssueService{
 		Coupon coupon = couponRepository.findById(issue.getCouponId())
 				.orElseThrow(() -> new CouponException(CouponErrorCode.COUPON_NOT_FOUND));
 		return MyCouponResponse.of(issue, coupon);
+	}
+
+	@Override
+	@Transactional
+	public void useCoupon(long userId, long issueId) {
+		CouponIssue issue = couponIssueRepository.findByIdAndUserIdForUpdate(issueId, userId)
+				.orElseThrow(() -> new CouponException(CouponErrorCode.COUPON_ISSUE_NOT_FOUND));
+		
+		if(issue.getStatus() != CouponIssueStatus.ISSUED) {
+			throw new CouponException(CouponErrorCode.COUPON_ISSUE_STATUS_CONFLICT);
+		}
+		issue.use();						// entity 메서드 호출 (status=USED, usedAt=now)
+	}
+
+	@Override
+	@Transactional
+	public void cancelCoupon(long userId, long issueId) {
+		CouponIssue issue = couponIssueRepository.findByIdAndUserIdForUpdate(issueId, userId)
+				.orElseThrow(() -> new CouponException(CouponErrorCode.COUPON_ISSUE_NOT_FOUND));
+		
+		if(issue.getStatus() != CouponIssueStatus.ISSUED) {
+			throw new CouponException(CouponErrorCode.COUPON_ISSUE_STATUS_CONFLICT);
+		}
+		issue.cancel(); 					// entity 메서드 호출 (status=CANCELED, canceledAt=now)
 	}
 
 }
