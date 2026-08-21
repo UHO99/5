@@ -15,6 +15,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
 import com.mycom.myapp.team5.domain.coupon.repository.CouponRepository;
 import com.mycom.myapp.team5.domain.coupon.service.CouponStatusService;
+import com.mycom.myapp.team5.domain.couponissue.entity.CouponIssue;
+import com.mycom.myapp.team5.domain.couponissue.repository.CouponIssueRepository;
+import com.mycom.myapp.team5.domain.user.entity.User;
+import com.mycom.myapp.team5.domain.user.repository.UserRepository;
 import com.mycom.myapp.team5.global.common.enums.CouponStatus;
 import com.mycom.myapp.team5.global.redis.CouponStockKeys;
 
@@ -32,16 +36,28 @@ public class CouponStatusSchedulerTest {
 	@Autowired
 	private StringRedisTemplate stringRedisTemplate;
 	
+	@Autowired
+	private CouponIssueRepository couponIssueRepository;
+	
+	@Autowired
+	private UserRepository userRepository;
+	
 	private final List<Long> createdCouponIds = new ArrayList<>();
+	private final List<Long> createdIssueIds = new ArrayList<>();
+	private final List<Long> createdUserIds = new ArrayList<>();
 	
 	// 데이터 정리 (Redis 키 + 쿠폰 row)
 	@AfterEach
 	void tearDown() {
+		createdIssueIds.forEach(couponIssueRepository::deleteById);
 		createdCouponIds.forEach(id -> {
 			stringRedisTemplate.delete(CouponStockKeys.stockKey(id));
 			couponRepository.deleteById(id);
 		});
-		createdCouponIds.clear();;
+		createdUserIds.forEach(userRepository::deleteById);
+		createdIssueIds.clear();
+		createdCouponIds.clear();
+		createdUserIds.clear();
 	}
 	
 	// 테스트 쿠폰 생성 (startAt/endAt 지정 가능, status 는 기본 READY)
@@ -55,6 +71,24 @@ public class CouponStatusSchedulerTest {
 		Coupon saved = couponRepository.save(coupon);
 		createdCouponIds.add(saved.getId());
 		return saved.getId();
+	}
+	
+	// 발급 이력 생성 (coupon_issue.coupon_id FK 대응)
+	private long createIssue(long userId, long couponId) {
+		CouponIssue issue = CouponIssue.builder()
+				.userId(userId)
+				.couponId(couponId)
+				.build();
+		CouponIssue saved = couponIssueRepository.save(issue);
+		createdIssueIds.add(saved.getId());
+		return saved.getId();
+	}
+	
+	// 사용자 생성 (coupon_issue.user_id FK 대응)
+	private long createUser(String email) {
+		User user = userRepository.save(User.builder().email(email).build());
+		createdUserIds.add(user.getId());
+		return user.getId();
 	}
 	
 	// 1) startAt이 지난 READY 쿠폰을 autoOpen()이 OPEN 으로 전환 + Redis 재고 초기화 (유스케이스 S010)
@@ -111,5 +145,24 @@ public class CouponStatusSchedulerTest {
 		couponStatusScheduler.replenishMissingStock();
 		
 		assertThat(stringRedisTemplate.opsForValue().get(CouponStockKeys.stockKey(couponId))).isEqualTo(String.valueOf(100));
+	}
+	
+	// 5) 발급 일부 진행 후 Redis 재시작 -> 남은 재고(total - 발급 건수)로 복구 (초과 발급 방지)
+	@Test
+	public void replenishMissingStock_실행시_발급된_수량_차감_복구() {
+		long couponId = createCoupon(100,
+				LocalDateTime.now().minusMinutes(1),
+				LocalDateTime.now().plusDays(1));
+		couponStatusService.openCoupon(couponId); 					// OPEN + 재고 100 초기화
+		for (int i = 0; i < 30; i++) {								// 발급 30건 재현
+			long userId = createUser("replenish-" + i + "@test.com");
+			createIssue(userId, couponId);
+		}
+		stringRedisTemplate.delete(CouponStockKeys.stockKey(couponId)); 			// Redis 재시작 상황 재현
+		
+		couponStatusScheduler.replenishMissingStock();
+		
+		assertThat(stringRedisTemplate.opsForValue().get(CouponStockKeys.stockKey(couponId)))
+		.isEqualTo("70");					// 100 - 30 (기존 로직이면 "100"이라 실패)
 	}
 }

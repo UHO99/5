@@ -17,7 +17,7 @@ const COUPON_LIST_POLL_INTERVAL_MS = 10_000;
 export function DashboardPage() {
   const [coupons, setCoupons] = useState<CouponSummary[]>([]);
   const [couponId, setCouponId] = useState(DEFAULT_COUPON_ID);
-  const { vals, toggleTest, error } = useMonitoringDashboard(couponId);
+  const { vals, startTest, stopTest, error } = useMonitoringDashboard(couponId);
   const [activeScenario, setActiveScenario] = useState<K6Scenario | null>(null);
 
   // 쿠폰 목록은 자주 안 바뀌니 대시보드 지표(2초)보다 느슨하게 폴링한다 - 새 쿠폰이 열리면
@@ -47,16 +47,20 @@ export function DashboardPage() {
     };
   }, []);
 
-  // TODO(k6 연동): 실제로는 선택한 스크립트로 k6를 실행하는 API를 호출해야 한다.
-  // 지금은 경과시간 표시용 로컬 상태를 켜는 스위치일 뿐이고, 지표(vals)는 이 상태와
-  // 무관하게 항상 실 백엔드 값을 폴링해서 보여준다.
+  // K6TestService(백엔드가 도커로 형제 k6 컨테이너를 띄움)를 실제로 호출한다.
+  // vals.testRunning은 이 호출과 무관하게 GET /api/admin/k6/status 폴링으로 계속 갱신된다.
   const handleStartTest = (scenario: K6Scenario) => {
     setActiveScenario(scenario);
-    toggleTest();
+    startTest(scenario.id).catch((e) => {
+      console.error("[HighFive] k6 실행 실패", e);
+      setActiveScenario(null);
+    });
   };
 
   const handleStopTest = () => {
-    toggleTest();
+    stopTest().catch((e) => {
+      console.error("[HighFive] k6 중지 실패", e);
+    });
     setActiveScenario(null);
   };
 

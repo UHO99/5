@@ -158,3 +158,60 @@ export async function fetchCoupons(): Promise<CouponSummary[]> {
 
   return body.data;
 }
+
+/** backend K6ScenarioResponse(domain/k6test/dto)와 1:1로 대응한다. backend K6Scenario enum이 유일한 소스. */
+export interface K6ScenarioDto {
+  id: string;
+  file: string;
+  name: string;
+  description: string;
+  rampUp: string;
+  hold: string;
+  targetVus: string;
+}
+
+/** backend K6StatusResponse(domain/k6test/dto)와 1:1로 대응한다. */
+export interface K6StatusResponse {
+  running: boolean;
+  scenarioId: string | null;
+  scenarioFile: string | null;
+  couponId: number | null;
+  startedAt: string | null;
+  exitCode: number | null;
+}
+
+/**
+ * 성공 시 ApiResponse<T>, 실패 시 ErrorResponse(code/message/timestamp) 둘 중 하나가 온다 - 두 경우 모두
+ * message 필드는 있으므로 그것만 읽어서 에러 메시지로 쓴다.
+ */
+async function parseApiResponse<T>(res: Response, fallbackMessage: string): Promise<T> {
+  const body = await res.json().catch(() => null);
+  if (!res.ok || !body?.success || body.data === null || body.data === undefined) {
+    throw new Error(body?.message ?? `${fallbackMessage} (HTTP ${res.status})`);
+  }
+  return body.data as T;
+}
+
+export async function fetchK6Scenarios(): Promise<K6ScenarioDto[]> {
+  const res = await fetch(`${API_BASE}/api/admin/k6/scenarios`);
+  return parseApiResponse<K6ScenarioDto[]>(res, "k6 시나리오 목록 조회 실패");
+}
+
+export async function runK6Scenario(scenarioId: string, couponId: number): Promise<K6StatusResponse> {
+  const res = await fetch(`${API_BASE}/api/admin/k6/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scenarioId, couponId }),
+  });
+  return parseApiResponse<K6StatusResponse>(res, "k6 실행 실패");
+}
+
+export async function stopK6Scenario(): Promise<K6StatusResponse> {
+  const res = await fetch(`${API_BASE}/api/admin/k6/stop`, { method: "POST" });
+  return parseApiResponse<K6StatusResponse>(res, "k6 중지 실패");
+}
+
+export async function fetchK6Status(): Promise<K6StatusResponse> {
+  const res = await fetch(`${API_BASE}/api/admin/k6/status`);
+  return parseApiResponse<K6StatusResponse>(res, "k6 상태 조회 실패");
+}
