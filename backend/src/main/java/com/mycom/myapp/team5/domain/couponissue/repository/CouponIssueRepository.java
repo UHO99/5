@@ -38,5 +38,6 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssue, Long> 
     
     // (유스케이스 U004) 비관적 락으로 소유권 검증 + 조회
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<CouponIssue> findByIdAndUserIdForUpdate(Long id, Long userId);
+    @Query("SELECT ci FROM CouponIssue ci WHERE ci.id = :id AND ci.userId = :userId")
+    Optional<CouponIssue> findByIdAndUserIdForUpdate(@Param("id") Long id, @Param("userId") Long userId);
 }
