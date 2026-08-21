@@ -54,10 +54,25 @@ export function DashboardPage() {
   // 적재 진행 상태를 폴링한다(K6 상태와 같은 패턴) - 서버 상태 그대로라 새로고침해도 "적재 중"이
   // 안 사라지고, 다른 사람이/다른 탭이 적재를 눌렀어도 여기서 알 수 있다.
   useEffect(() => {
+    // 새로고침 직후 첫 조회에서 받는 finishedAt은 "방금 끝난 일"이 아니라 "이미 예전에 끝나서
+    // 서버가 계속 기억하고 있던 결과"다 - lastHandledFinishRef가 마운트마다 null로 리셋되는 것과
+    // 부딪혀서 매번 새 완료로 오인하고 팝업이 또 뜨는 걸 막는다. 첫 조회는 조용히 반영만 한다.
+    let isFirstLoad = true;
     const load = () => {
       fetchDummyDataStatus()
         .then((status) => {
           setDummyStatus(status);
+
+          if (isFirstLoad) {
+            isFirstLoad = false;
+            lastHandledFinishRef.current = status.finishedAt;
+            if (status.lastResult) {
+              const counts = status.lastResult;
+              setDbCounts({ userCount: counts.userCount, couponCount: counts.couponCount, couponIssueCount: counts.couponIssueCount });
+              setReloadTiming({ userLoadMs: counts.userLoadMs, couponIssueLoadMs: counts.couponIssueLoadMs, totalMs: counts.totalMs });
+            }
+            return;
+          }
 
           if (status.finishedAt && status.finishedAt !== lastHandledFinishRef.current) {
             lastHandledFinishRef.current = status.finishedAt;
