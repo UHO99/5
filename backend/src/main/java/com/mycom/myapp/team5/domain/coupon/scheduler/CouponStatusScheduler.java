@@ -30,13 +30,13 @@ public class CouponStatusScheduler {
 	private final CouponStatusService couponStatusService;
 	private final CouponStockRedisService couponStockRedisService;
 	private final StringRedisTemplate stringRedisTemplate;
-	
+
 	// (유스케이스 S010) startAt이 지난 READY 쿠폰을 자동 OPEN (Redis 재고 초기화 포함)
 	@Scheduled(fixedDelay = 60_000)
 	public void autoOpen() {
 		LocalDateTime now = LocalDateTime.now();
 		List<Coupon> coupons = couponRepository.findByStatusAndStartAtLessThanEqual(CouponStatus.READY, now);
-		
+
 		for(Coupon coupon : coupons) {
 			try {
 				couponStatusService.openCoupon(coupon.getId());
@@ -47,13 +47,13 @@ public class CouponStatusScheduler {
 			}
 		}
 	}
-	
+
 	// (유스케이스 S011) endAt이 지난 OPEN 쿠폰을 자동 CLOSE (Redis 키 정리 포함)
 	@Scheduled(fixedDelay = 60_000)
 	public void autoClose() {
 		LocalDateTime now = LocalDateTime.now();
 		List<Coupon> coupons = couponRepository.findByStatusAndEndAtLessThanEqual(CouponStatus.OPEN, now);
-		
+
 		for(Coupon coupon : coupons) {
 			try {
 				couponStatusService.closeCoupon(coupon.getId());
@@ -64,26 +64,18 @@ public class CouponStatusScheduler {
 			}
 		}
 	}
-	
+
 	// status=OPEN 인데 Redis 재고 키가 없으면 재적재 (Redis 재시작 대응)
 	@Scheduled(fixedDelay = 60_000)
 	public void replenishMissingStock() {
 		List<Coupon> openCoupons = couponRepository.findByStatus(CouponStatus.OPEN);
 
-        for (Coupon coupon : openCoupons) {
-            if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(CouponStockKeys.stockKey(coupon.getId())))) {
-                long remaining = remainingStock(coupon);
-                couponStockRedisService.initStock(coupon.getId(), (int) remaining);
-                log.info("Redis 재고 보정 완료 - couponId={}, totalQuantity={}, remaining={}",
-                        coupon.getId(), coupon.getTotalQuantity(), remaining);
-            }
-        }
+		for (Coupon coupon : openCoupons) {
+			if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(CouponStockKeys.stockKey(coupon.getId())))) {
+				couponStockRedisService.initStock(coupon.getId(), coupon.getTotalQuantity());
+				log.info("Redis 재고 보정 완료 - couponId={}, stock={}",
+						coupon.getId(), coupon.getTotalQuantity());
+			}
+		}
 	}
-
-	private long remainingStock(Coupon coupon) {
-		Long issuedCount = stringRedisTemplate.opsForSet().size(CouponStockKeys.issuedSetKey(coupon.getId()));
-		long issued = issuedCount == null ? 0 : issuedCount;
-		return Math.max(0, coupon.getTotalQuantity() - issued);
-	}
-
 }
