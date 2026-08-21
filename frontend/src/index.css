@@ -659,6 +659,16 @@ body {
   color: #8b8fa3;
 }
 
+.dialog-loading {
+  font: 500 12.5px/1.4 "Inter", sans-serif;
+  color: #8b8fa3;
+}
+
+.dialog-error {
+  font: 500 12.5px/1.4 "Inter", sans-serif;
+  color: #dc2626;
+}
+
 .scenario-list {
   display: flex;
   flex-direction: column;
