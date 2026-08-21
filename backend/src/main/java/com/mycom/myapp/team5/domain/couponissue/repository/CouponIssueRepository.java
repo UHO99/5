@@ -32,4 +32,7 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssue, Long> 
     
     // (유스케이스 U003) 본인 소유 쿠폰 단건 - userId로 소유권까지 검증
     Optional<CouponIssue> findByIdAndUserId(Long id, Long userId);
+
+    // 시나리오 7: 관리자 — 특정 쿠폰의 전체 발급 이력 (최근 발급 순)
+    List<CouponIssue> findByCouponIdOrderByIssuedAtDesc(Long couponId);
 }

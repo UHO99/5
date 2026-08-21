@@ -12,6 +12,7 @@ import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
 import com.mycom.myapp.team5.domain.coupon.exception.CouponErrorCode;
 import com.mycom.myapp.team5.domain.coupon.exception.CouponException;
 import com.mycom.myapp.team5.domain.coupon.repository.CouponRepository;
+import com.mycom.myapp.team5.domain.couponissue.dto.CouponIssueHistoryResponse;
 import com.mycom.myapp.team5.domain.couponissue.dto.MyCouponResponse;
 import com.mycom.myapp.team5.domain.couponissue.entity.CouponIssue;
 import com.mycom.myapp.team5.domain.couponissue.repository.CouponIssueRepository;
@@ -52,6 +53,17 @@ public class CouponIssueServiceImpl implements CouponIssueService{
 		Coupon coupon = couponRepository.findById(issue.getCouponId())
 				.orElseThrow(() -> new CouponException(CouponErrorCode.COUPON_NOT_FOUND));
 		return MyCouponResponse.of(issue, coupon);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<CouponIssueHistoryResponse> getIssuesByCouponId(long couponId) {
+		if (!couponRepository.existsById(couponId)) {
+			throw new CouponException(CouponErrorCode.COUPON_NOT_FOUND);
+		}
+		return couponIssueRepository.findByCouponIdOrderByIssuedAtDesc(couponId).stream()
+				.map(CouponIssueHistoryResponse::from)
+				.toList();
 	}
 
 }
