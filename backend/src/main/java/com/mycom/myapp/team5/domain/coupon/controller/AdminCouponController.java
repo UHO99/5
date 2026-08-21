@@ -4,6 +4,7 @@ import com.mycom.myapp.team5.domain.coupon.dto.CouponRequest;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponUpdateRequest;
 import com.mycom.myapp.team5.domain.coupon.service.CouponService;
+import com.mycom.myapp.team5.global.aspect.LogDescription;
 import com.mycom.myapp.team5.global.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class AdminCouponController {
 
     private final CouponService couponService;
 
+    @LogDescription("쿠폰 생성 (관리자)")
     @PostMapping
     public ResponseEntity<ApiResponse<CouponResponse>> create(
             @Valid @RequestBody CouponRequest request
@@ -36,6 +38,7 @@ public class AdminCouponController {
                 .body(ApiResponse.success(response));
     }
 
+    @LogDescription("쿠폰 재고/기간 수정 (관리자)")
     @PatchMapping("/{couponId}")
     public ResponseEntity<ApiResponse<CouponResponse>> update(
             @PathVariable long couponId,
