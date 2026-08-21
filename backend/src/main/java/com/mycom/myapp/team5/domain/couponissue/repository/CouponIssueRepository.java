@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mycom.myapp.team5.domain.couponissue.entity.CouponIssue;
+
+import jakarta.persistence.LockModeType;
 
 public interface CouponIssueRepository extends JpaRepository<CouponIssue, Long> {
 
@@ -32,4 +35,9 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssue, Long> 
     
     // (유스케이스 U003) 본인 소유 쿠폰 단건 - userId로 소유권까지 검증
     Optional<CouponIssue> findByIdAndUserId(Long id, Long userId);
+    
+    // (유스케이스 U004) 비관적 락으로 소유권 검증 + 조회
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ci FROM CouponIssue ci WHERE ci.id = :id AND ci.userId = :userId")
+    Optional<CouponIssue> findByIdAndUserIdForUpdate(@Param("id") Long id, @Param("userId") Long userId);
 }
