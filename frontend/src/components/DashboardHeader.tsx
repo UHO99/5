@@ -13,9 +13,10 @@ interface Props {
   coupons: CouponSummary[];
   couponId: number;
   onCouponChange: (couponId: number) => void;
+  loadingData: boolean;
 }
 
-export function DashboardHeader({ vals, error, coupons, couponId, onCouponChange }: Props) {
+export function DashboardHeader({ vals, error, coupons, couponId, onCouponChange, loadingData }: Props) {
   return (
     <div className="main-header">
       <div>
@@ -40,6 +41,13 @@ export function DashboardHeader({ vals, error, coupons, couponId, onCouponChange
             </option>
           ))}
         </select>
+
+        {loadingData && (
+          <div className="status-pill">
+            <div className="status-dot" style={{ background: "#f59e0b" }} />
+            <span className="status-label">데이터 적재 중</span>
+          </div>
+        )}
 
         <div className="status-pill">
           <div className="status-dot" style={{ background: vals.systemStatusColor }} />

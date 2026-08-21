@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { K6_SCENARIOS, type K6Scenario } from "../lib/scenarios";
+import { useEffect, useState } from "react";
+import { fetchK6Scenarios } from "../lib/api";
+import type { K6Scenario } from "../lib/scenarios";
 
 interface Props {
   onCancel: () => void;
@@ -7,7 +8,25 @@ interface Props {
 }
 
 export function ScenarioDialog({ onCancel, onConfirm }: Props) {
-  const [selectedId, setSelectedId] = useState(K6_SCENARIOS[0].id);
+  const [scenarios, setScenarios] = useState<K6Scenario[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchK6Scenarios()
+      .then((list) => {
+        if (cancelled) return;
+        setScenarios(list);
+        setSelectedId((current) => current ?? list[0]?.id ?? null);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "시나리오 목록 조회 실패");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="dialog-overlay" onClick={onCancel}>
@@ -17,8 +36,11 @@ export function ScenarioDialog({ onCancel, onConfirm }: Props) {
           <span className="dialog-subtitle">backend/k6 에 있는 스크립트 중 하나를 골라 실행합니다.</span>
         </div>
 
+        {error && <div className="dialog-error">{error}</div>}
+        {!error && scenarios.length === 0 && <div className="dialog-loading">시나리오 목록을 불러오는 중...</div>}
+
         <div className="scenario-list">
-          {K6_SCENARIOS.map((scenario) => (
+          {scenarios.map((scenario) => (
             <label
               key={scenario.id}
               className={`scenario-item ${selectedId === scenario.id ? "selected" : ""}`}
@@ -54,8 +76,10 @@ export function ScenarioDialog({ onCancel, onConfirm }: Props) {
           <button
             type="button"
             className="dialog-btn primary"
+            disabled={!selectedId}
             onClick={() => {
-              const scenario = K6_SCENARIOS.find((s) => s.id === selectedId)!;
+              const scenario = scenarios.find((s) => s.id === selectedId);
+              if (!scenario) return;
               onConfirm(scenario);
             }}
           >

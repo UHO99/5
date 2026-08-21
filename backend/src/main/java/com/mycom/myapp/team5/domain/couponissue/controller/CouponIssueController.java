@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,5 +33,21 @@ public class CouponIssueController {
 	@GetMapping("/api/my/coupons/{issueId}")
 	public ResponseEntity<ApiResponse<MyCouponResponse>> getMyCoupon(@PathVariable long issueId, @RequestParam long userId){
 		return ResponseEntity.ok(ApiResponse.success(couponIssueService.getMyCoupon(userId, issueId)));
+	}
+	
+	// 쿠폰 사용
+	@LogDescription("내 쿠폰 사용")
+	@PostMapping("/api/my/coupons/{issueId}/use")
+	public ResponseEntity<ApiResponse<Void>> useCoupon(@PathVariable long issueId, @RequestParam long userId){
+		couponIssueService.useCoupon(userId, issueId);
+		return ResponseEntity.ok(ApiResponse.success(null));
+	}
+	
+	// 쿠폰 취소
+	@LogDescription("내 쿠폰 취소")
+	@PostMapping("/api/my/coupons/{issueId}/cancel")
+	public ResponseEntity<ApiResponse<Void>> cancelCoupon(@PathVariable long issueId, @RequestParam long userId){
+		couponIssueService.cancelCoupon(userId, issueId);
+		return ResponseEntity.ok(ApiResponse.success(null));
 	}
 }
