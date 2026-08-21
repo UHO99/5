@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { colorFor, fmt } from "../lib/format";
-import { fetchMonitoringDashboard, type MonitoringDashboardResponse } from "../lib/api";
+import {
+  fetchK6Status,
+  fetchMonitoringDashboard,
+  runK6Scenario,
+  stopK6Scenario,
+  type K6StatusResponse,
+  type MonitoringDashboardResponse,
+} from "../lib/api";
 
 /**
  * 실 백엔드(GET /api/admin/monitoring/coupons/{couponId}) 폴링 훅.
  * 예전 useDashboardSimulation을 그대로 대체한다 - DashboardVals 필드 이름/의미를 유지해서
  * 카드 컴포넌트들은 손대지 않아도 되게 했다.
+ * "테스트 시작/중지"는 K6TestService(백엔드가 도커로 형제 k6 컨테이너를 띄움)를 그대로 호출하고,
+ * 실행 여부(testRunning)는 GET /api/admin/k6/status 폴링 결과를 그대로 반영한다 - 로컬 UI 상태가 아니다.
  */
 
 const DATA_POLL_INTERVAL_MS = 2000;
@@ -32,10 +41,9 @@ const ZERO_DASHBOARD: MonitoringDashboardResponse = {
   dbStorage: { dbConnPoolActive: 0, dbConnPoolMax: 0, dbInsertThroughputPerSecond: 0, batchInsertAvgSize: 0, batchInsertMaxSize: 0 },
 };
 
-interface TestRunState {
-  testRunning: boolean;
-  startedAt: number | null;
-}
+const ZERO_K6_STATUS: K6StatusResponse = {
+  running: false, scenarioId: null, scenarioFile: null, couponId: null, startedAt: null, exitCode: null,
+};
 
 export interface DashboardVals {
   clockText: string;
@@ -82,7 +90,7 @@ function formatDelay(ms: number): string {
   return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(1)}s`;
 }
 
-function toVals(data: MonitoringDashboardResponse, now: number, testState: TestRunState): DashboardVals {
+function toVals(data: MonitoringDashboardResponse, now: number, k6Status: K6StatusResponse): DashboardVals {
   const sr = data.serverResources;
   const ar = data.apiResponse;
   const ci = data.couponIssueStatus;
@@ -99,8 +107,8 @@ function toVals(data: MonitoringDashboardResponse, now: number, testState: TestR
   const soldOutPct = couponFailTotal > 0 ? (ci.soldOutFailCount / couponFailTotal) * 100 : 0;
 
   let elapsedText = "";
-  if (testState.testRunning && testState.startedAt) {
-    const sec = Math.floor((now - testState.startedAt) / 1000);
+  if (k6Status.running && k6Status.startedAt) {
+    const sec = Math.floor((now - Date.parse(k6Status.startedAt)) / 1000);
     const m = Math.floor(sec / 60);
     const r = sec % 60;
     elapsedText = `${m}:${String(r).padStart(2, "0")}`;
@@ -151,16 +159,23 @@ function toVals(data: MonitoringDashboardResponse, now: number, testState: TestR
     batchAvgFmt: fmt(db.batchInsertAvgSize), batchMaxFmt: fmt(db.batchInsertMaxSize),
     batchAvgPct: `${Math.min(100, (db.batchInsertAvgSize / 500) * 100)}%`,
     batchMaxPct: `${Math.min(100, (db.batchInsertMaxSize / 500) * 100)}%`,
-    testRunning: testState.testRunning,
+    testRunning: k6Status.running,
     elapsedText,
-    testButtonLabel: testState.testRunning ? "테스트 중지" : "테스트 시작",
+    testButtonLabel: k6Status.running ? "테스트 중지" : "테스트 시작",
   };
 }
 
-export function useMonitoringDashboard(couponId: number): { vals: DashboardVals; toggleTest: () => void; error: string | null } {
+export interface UseMonitoringDashboardResult {
+  vals: DashboardVals;
+  startTest: (scenarioId: string) => Promise<void>;
+  stopTest: () => Promise<void>;
+  error: string | null;
+}
+
+export function useMonitoringDashboard(couponId: number): UseMonitoringDashboardResult {
   const [data, setData] = useState<MonitoringDashboardResponse>(ZERO_DASHBOARD);
   const [now, setNow] = useState(Date.now());
-  const [testState, setTestState] = useState<TestRunState>({ testRunning: false, startedAt: null });
+  const [k6Status, setK6Status] = useState<K6StatusResponse>(ZERO_K6_STATUS);
   const [error, setError] = useState<string | null>(null);
 
   const dataPollRef = useRef<number | null>(null);
@@ -195,6 +210,29 @@ export function useMonitoringDashboard(couponId: number): { vals: DashboardVals;
     };
   }, [couponId]);
 
+  // k6 실행 상태는 쿠폰과 무관하게(단일 러너) 계속 폴링한다 - 스크립트가 끝나면(약 45초) testRunning이
+  // 자동으로 false로 바뀌는 게 이 폴링 덕분이다.
+  useEffect(() => {
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const next = await fetchK6Status();
+        if (!cancelled) setK6Status(next);
+      } catch {
+        // k6 상태 조회 실패는 모니터링 에러와 별도로 취급하지 않는다 - 모니터링 폴링이 이미 같은 원인
+        // (백엔드 다운)을 error로 드러낸다.
+      }
+    };
+
+    poll();
+    const timer = window.setInterval(poll, DATA_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
   useEffect(() => {
     clockTickRef.current = window.setInterval(() => setNow(Date.now()), CLOCK_TICK_INTERVAL_MS);
     return () => {
@@ -202,16 +240,15 @@ export function useMonitoringDashboard(couponId: number): { vals: DashboardVals;
     };
   }, []);
 
-  // TODO(k6 연동): "테스트 시작"은 아직 로컬 UI 상태(경과시간 표시용)일 뿐이다.
-  // 실제로 k6 스크립트를 실행하는 백엔드 API가 생기면 여기서 그 API를 호출해야 한다.
-  // 지표 자체(vals)는 이 상태와 무관하게 항상 실 백엔드 값을 반영한다.
-  const toggleTest = useCallback(() => {
-    setTestState((s) =>
-      s.testRunning
-        ? { testRunning: false, startedAt: null }
-        : { testRunning: true, startedAt: Date.now() }
-    );
+  const startTest = useCallback(async (scenarioId: string) => {
+    const next = await runK6Scenario(scenarioId, couponId);
+    setK6Status(next);
+  }, [couponId]);
+
+  const stopTest = useCallback(async () => {
+    const next = await stopK6Scenario();
+    setK6Status(next);
   }, []);
 
-  return { vals: toVals(data, now, testState), toggleTest, error };
+  return { vals: toVals(data, now, k6Status), startTest, stopTest, error };
 }

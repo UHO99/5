@@ -30,7 +30,7 @@ public class CouponController {
 
 	@LogDescription("쿠폰 발급 요청")
 	@PostMapping("/{couponId}/issue")
-	public ResponseEntity<ApiResponse<Void>> requestIssue(@PathVariable("couponId") long couponId, @RequestParam("longId") long userId) {
+	public ResponseEntity<ApiResponse<Void>> requestIssue(@PathVariable("couponId") long couponId, @RequestParam("userId") long userId) {
 
 		// 발급 전 OPEN 상태 검증 (READY/CLOSE/미존재 쿠폰은 여기서 차단)
 		couponService.validateIssueable(couponId);
