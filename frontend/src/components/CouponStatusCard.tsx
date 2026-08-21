@@ -1,4 +1,4 @@
-import type { DashboardVals } from "../hooks/useDashboardSimulation";
+import type { DashboardVals } from "../hooks/useMonitoringDashboard";
 
 export function CouponStatusCard({ vals }: { vals: DashboardVals }) {
   return (
@@ -49,7 +49,7 @@ export function CouponStatusCard({ vals }: { vals: DashboardVals }) {
           </div>
           <div className="overissue-item">
             <span className="tile-label-xs">성공발급</span>
-            <span className="tile-value-mono">{vals.couponSuccessFmt}</span>
+            <span className="tile-value-mono">{vals.overissueSuccessFmt}</span>
           </div>
           <div className="overissue-item">
             <span className="tile-label-xs">DB이력</span>
@@ -61,6 +61,18 @@ export function CouponStatusCard({ vals }: { vals: DashboardVals }) {
           style={{ background: vals.overissueBg, color: vals.overissueFg }}
         >
           {vals.overissueLabel}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+        <span className="pel-delay-caption" style={{ marginTop: 0 }}>
+          S012 동기화값 {vals.s012SyncedFmt}
+        </span>
+        <span
+          className="overissue-badge"
+          style={{ background: vals.s013ConfirmedBg, color: vals.s013ConfirmedFg }}
+        >
+          S013 {vals.s013ConfirmedLabel}
         </span>
       </div>
     </div>

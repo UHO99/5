@@ -3,6 +3,7 @@ package com.mycom.myapp.team5.domain.coupon.service;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponOverviewResponse;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponRequest;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
+import com.mycom.myapp.team5.domain.coupon.dto.CouponSummary;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponUpdateRequest;
 
 import java.util.List;
@@ -31,4 +32,5 @@ public interface CouponService {
      */
     void validateIssueable(long couponId);
 
+    List<CouponSummary> listAll();
 }

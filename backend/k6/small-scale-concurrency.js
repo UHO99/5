@@ -15,10 +15,13 @@
 
 import http from 'k6/http';
 import { Counter } from 'k6/metrics';
+import exec from 'k6/execution';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 const COUPON_ID = __ENV.COUPON_ID || '1';
 const STOCK = Number(__ENV.STOCK || 20);
+// 더미 유저 수. users 테이블에 실제로 존재하는 id 범위(1 ~ USER_COUNT)
+const USER_COUNT = Number(__ENV.USER_COUNT || 1_000_000);
 
 // 재고의 2배를 요청해 "초과 요청 상황"을 실제로 만든다.
 const REQUEST_COUNT = STOCK * 2;
@@ -42,8 +45,8 @@ export const options = {
 };
 
 export default function () {
-  // 더미 users id 범위(1~1,000,000) 안으로 유저 id 생성 — 범위 밖이면 FK 위반으로 DB 반영 실패
-  const userId = ((__VU - 1) * REQUEST_COUNT + __ITER) % 1_000_000 + 1;
+  // 매 요청마다 서로 다른 유저 (users id: 1 ~ USER_COUNT)
+  const userId = (exec.scenario.iterationInTest % USER_COUNT) + 1;
 
   const res = http.post(`${BASE_URL}/coupons/${COUPON_ID}/issue?userId=${userId}`);
 

@@ -3,6 +3,7 @@ package com.mycom.myapp.team5.domain.coupon.service;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponOverviewResponse;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponRequest;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
+import com.mycom.myapp.team5.domain.coupon.dto.CouponSummary;
 import com.mycom.myapp.team5.domain.coupon.dto.CouponUpdateRequest;
 import com.mycom.myapp.team5.domain.coupon.entity.Coupon;
 import com.mycom.myapp.team5.domain.coupon.exception.CouponErrorCode;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -158,4 +160,12 @@ public class CouponServiceImpl implements CouponService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<CouponSummary> listAll() {
+        return couponRepository.findAll().stream()
+                .sorted(Comparator.comparing(Coupon::getId))
+                .map(CouponSummary::from)
+                .toList();
+    }
 }

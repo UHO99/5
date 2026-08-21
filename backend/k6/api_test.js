@@ -34,10 +34,9 @@ export const options = {
 };
 
 export default function () {
-    const userId = `${__VU}_${__ITER}`;
-    const res = http.post(`${BASE_URL}/coupons/${COUPON_ID}/issue?userId=${userId}`); // Kafka
-    // const res = http.post(`${BASE_URL}/coupons/${COUPON_ID}/issue?userId=${userId}`); // Redis
-    // const res = http.post(`${BASE_URL}/coupons/${COUPON_ID}/issue?userId=${userId}`); // CRUD
+    const USER_POOL_SIZE = Number(__ENV.USER_POOL_SIZE || 20_000);
+    const userId = ((__VU * 1000 + __ITER) % USER_POOL_SIZE) + 1;
+    const res = http.post(`${BASE_URL}/coupons/${COUPON_ID}/issue?userId=${userId}`);
 
     const ok = check(res, {
         '202 Accepted': (r) => r.status === 202,
@@ -52,5 +51,5 @@ export default function () {
 
 export function teardown() {
     const res = http.get(`${BASE_URL}/coupons/${COUPON_ID}`);
-    console.log(`[teardown] GET /${COUPON_ID} -> status=${res.status} body=${res.body}`);
+    console.log(`[teardown] GET /coupons/${COUPON_ID} -> status=${res.status} body=${res.body}`);
 }

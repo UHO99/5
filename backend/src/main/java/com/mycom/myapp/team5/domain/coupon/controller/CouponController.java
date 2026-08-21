@@ -2,6 +2,7 @@ package com.mycom.myapp.team5.domain.coupon.controller;
 
 import com.mycom.myapp.team5.domain.coupon.dto.CouponResponse;
 import com.mycom.myapp.team5.domain.coupon.service.CouponService;
+import com.mycom.myapp.team5.global.aspect.LogDescription;
 import com.mycom.myapp.team5.global.common.dto.ApiResponse;
 import com.mycom.myapp.team5.global.redis.CouponIssueStreamProducer;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * U001 등 사용자 쿠폰 API.
+ * U001 사용자 쿠폰 조회 + 발급 요청.
  */
 @RestController
 @RequestMapping("/coupons")
@@ -26,23 +27,26 @@ public class CouponController {
     private final CouponService couponService;
     private final CouponIssueStreamProducer producer;
 
+    @LogDescription("쿠폰 목록 조회")
     @GetMapping
     public ResponseEntity<ApiResponse<List<CouponResponse>>> getCoupons() {
         return ResponseEntity.ok(ApiResponse.success(couponService.getCoupons()));
     }
 
+    @LogDescription("쿠폰 정보 조회")
     @GetMapping("/{couponId}")
     public ResponseEntity<ApiResponse<CouponResponse>> getCoupon(@PathVariable long couponId) {
         return ResponseEntity.ok(ApiResponse.success(couponService.getCoupon(couponId)));
     }
 
+    @LogDescription("쿠폰 발급 요청")
     @PostMapping("/{couponId}/issue")
-    public ResponseEntity<Void> requestIssue(
+    public ResponseEntity<ApiResponse<Void>> requestIssue(
             @PathVariable long couponId,
             @RequestParam long userId
     ) {
         couponService.validateIssueable(couponId);
         producer.requestIssue(couponId, userId);
-        return ResponseEntity.accepted().build();
+        return ResponseEntity.accepted().body(ApiResponse.successNoData());
     }
 }
