@@ -25,11 +25,13 @@ public class CouponController {
 	private final CouponStatusService couponStatusService; // 상태 전환 서비스 추가
 	private final CouponIssueStreamProducer producer;
 
+	@LogDescription("쿠폰 목록 조회")
 	@GetMapping
 	public ResponseEntity<ApiResponse<List<CouponResponse>>> getCoupons() {
 		return ResponseEntity.ok(ApiResponse.success(couponService.getCoupons()));
 	}
 
+	@LogDescription("쿠폰 정보 조회")
 	@GetMapping("/{couponId}")
 	public ResponseEntity<ApiResponse<CouponResponse>> getCoupon(@PathVariable long couponId) {
 		return ResponseEntity.ok(ApiResponse.success(couponService.getCoupon(couponId)));
