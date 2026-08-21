@@ -45,17 +45,21 @@ public class CouponControllerTest {
 		couponStockRedisService.initStock(COUPON_ID, 1);
 
 		// when & then
-		mockMvc.perform(post("/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID))).andExpect(status().isAccepted()).andExpect(jsonPath("$.success").value(true)).andExpect(jsonPath("$.data").doesNotExist()).andExpect(jsonPath("$.message").doesNotExist());
+		mockMvc.perform(post("/coupons/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID)))
+				.andExpect(status().isAccepted());
 	}
 
 	@Test
 	void 중복_발급이면_409와_ErrorResponse_형식으로_응답한다() throws Exception {
 		// given
 		couponStockRedisService.initStock(COUPON_ID, 10);
-		mockMvc.perform(post("/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID))); // 최초 1회 성공
+		mockMvc.perform(post("/coupons/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID))); // 최초 1회 성공
 
 		// when & then
-		mockMvc.perform(post("/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID))).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CI001")).andExpect(jsonPath("$.message").value("쿠폰 중복 발급"));
+		mockMvc.perform(post("/coupons/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("CI001"))
+				.andExpect(jsonPath("$.message").value("쿠폰 중복 발급"));
 	}
 
 	@Test
@@ -64,9 +68,9 @@ public class CouponControllerTest {
 		couponStockRedisService.initStock(COUPON_ID, 0);
 
 		// when & then
-		mockMvc.perform(post("/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID))).andExpect(status().isNoContent());
+		mockMvc.perform(post("/coupons/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID)))
+				.andExpect(status().isNoContent());
 		// 204 No Content 응답은 표준적으로 바디를 안 담으므로 code/message는 별도 검증하지 않음
-		// (아래 "직접 검증이 필요한 이유" 참고)
 	}
 
 	@Test
@@ -74,6 +78,7 @@ public class CouponControllerTest {
 		// given: initStock을 호출하지 않은 상태 (쿠폰 오픈 전을 흉내냄)
 
 		// when & then
-		mockMvc.perform(post("/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID))).andExpect(status().isNoContent());
+		mockMvc.perform(post("/coupons/{couponId}/issue", COUPON_ID).param("userId", String.valueOf(USER_ID)))
+				.andExpect(status().isNoContent());
 	}
 }

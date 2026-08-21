@@ -42,10 +42,10 @@ export const options = {
 };
 
 export default function () {
-  // 매 요청마다 서로 다른 유저 → "여러 유저가 동시에" 상황을 재현
-  const userId = __VU * 1_000_000 + __ITER;
+  // 더미 users id 범위(1~1,000,000) 안으로 유저 id 생성 — 범위 밖이면 FK 위반으로 DB 반영 실패
+  const userId = ((__VU - 1) * REQUEST_COUNT + __ITER) % 1_000_000 + 1;
 
-  const res = http.post(`${BASE_URL}/${COUPON_ID}/issue?userId=${userId}`);
+  const res = http.post(`${BASE_URL}/coupons/${COUPON_ID}/issue?userId=${userId}`);
 
   switch (res.status) {
     case 202: issued.add(1); break;
