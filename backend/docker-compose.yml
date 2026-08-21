@@ -19,6 +19,7 @@ services:
   mysql:
     image: mysql:8.0.40
     container_name: mysql
+    command: --local-infile=1
     ports:
       - "3308:3306"
     networks:

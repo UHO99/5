@@ -14,13 +14,15 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 import java.util.Random;
+import javax.sql.DataSource;
 
 /**
- * 쿠폰 / 발급 이력 더미데이터 생성 도구 (수동 실행)
- * DummyDataGenerator 로 users 를 먼저 적재한 뒤 실행
+ * 쿠폰 / 발급 이력 더미데이터 생성 도구
+ * DummyDataGenerator 로 users 를 먼저 적재한 뒤 실행. {@link DummyDataGenerator}와 마찬가지로
+ * main()으로 단독 실행하거나 {@link #run(DataSource)}로 Spring 컨텍스트 안에서 호출할 수 있다.
  * 사전 조건
  * 1) MySQL : SET GLOBAL local_infile = 1;
- * 2) application-dev.properties 의 url : ...&amp;allowLoadLocalInfile=true
+ * 2) 단독 실행 시 application-dev.properties 의 url : ...&amp;allowLoadLocalInfile=true
  */
 public class CouponDummyGenerator {
 
@@ -54,10 +56,19 @@ public class CouponDummyGenerator {
     /** LOAD DATA 에서 NULL */
     private static final String NULL_MARK = "\\N";
 
+    /** 적재된 coupon / coupon_issue 건수. */
+    public record Counts(long couponCount, long issueCount) {}
+
     public static void main(String[] args) throws Exception {
+        run(null);
+    }
+
+    /** dataSource가 있으면(Spring 컨텍스트 안) 그 커넥션을 쓰고, null이면 단독 실행용 접속을 쓴다. */
+    public static Counts run(DataSource dataSource) throws Exception {
         generateCsv();
-        load();
-        verify();
+        Counts counts = load(dataSource);
+        verify(dataSource);
+        return counts;
     }
 
     // ── 1) CSV 생성 ─────────────────────────────────────
@@ -172,14 +183,14 @@ public class CouponDummyGenerator {
     }
 
     // ── 2) 적재 ─────────────────────────────────────────
-    private static void load() throws Exception {
+    private static Counts load(DataSource dataSource) throws Exception {
         String couponSql = loadSql(COUPON_CSV, "coupon",
                 "(id, name, total_quantity, start_at, end_at, status, "
               + "created_at, updated_at, issued_quantity)");
         String issueSql = loadSql(ISSUE_CSV, "coupon_issue",
                 "(id, user_id, coupon_id, status, issued_at, used_at, canceled_at, expired_at)");
 
-        try (Connection con = connect();
+        try (Connection con = connect(dataSource);
              Statement st = con.createStatement()) {
 
             st.execute("SET FOREIGN_KEY_CHECKS = 0");
@@ -188,6 +199,7 @@ public class CouponDummyGenerator {
             // 자식 → 부모 순으로 비운다
             st.execute("TRUNCATE TABLE coupon_issue");
             st.execute("TRUNCATE TABLE coupon");
+            System.out.println("TRUNCATE : coupon_issue, coupon 비움");
 
             long t1 = System.currentTimeMillis();
             int coupons = st.executeUpdate(couponSql);
@@ -200,6 +212,7 @@ public class CouponDummyGenerator {
 
             System.out.printf("적재     : 쿠폰 %,d건 %,dms / 발급 이력 %,d건 %,dms%n",
                     coupons, t2 - t1, issues, t3 - t2);
+            return new Counts(coupons, issues);
         }
     }
 
@@ -213,8 +226,8 @@ public class CouponDummyGenerator {
     // ── 3) 검증 ─────────────────────────────────────────
     // 적재 중 제약 검사를 껐으므로 위반 데이터가 들어갔는지 직접 확인한다.
     // 검사를 다시 켜도 이미 들어간 데이터를 소급 검증하지는 않는다.
-    private static void verify() throws Exception {
-        try (Connection con = connect();
+    private static void verify(DataSource dataSource) throws Exception {
+        try (Connection con = connect(dataSource);
              Statement st = con.createStatement()) {
 
             System.out.println();
@@ -280,8 +293,13 @@ public class CouponDummyGenerator {
         }
     }
 
-    // ── DB 접속 ─────────────────────────────────────────
-    private static Connection connect() throws Exception {
+    // ── DB 접속 : dataSource가 있으면(Spring 컨텍스트) 그 커넥션을 쓰고,
+    // 없으면(단독 실행) application-dev.properties를 직접 읽는다 ─────
+    private static Connection connect(DataSource dataSource) throws Exception {
+        if (dataSource != null) {
+            return dataSource.getConnection();
+        }
+
         Properties p = new Properties();
         try (InputStream in = CouponDummyGenerator.class.getClassLoader()
                 .getResourceAsStream("application-dev.properties")) {
